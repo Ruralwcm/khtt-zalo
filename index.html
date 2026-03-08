@@ -215,51 +215,57 @@ var fileName = '';
 var FORM_NAME = 'KHTT_Zalo'; // Tên form để match cột T
 
 // ===== CHECK ACTIVE TIME =====
-function checkFormActive(rows, h) {
-  var iForm = h.indexOf('Form');
-  var iBatDau = h.indexOf('Bắt đầu');
-  var iKetThuc = h.indexOf('Kết thúc');
-  var iThu = h.indexOf('Thứ');
-  if (iForm < 0 || iBatDau < 0 || iKetThuc < 0 || iThu < 0) return { active: true };
+// Cấu trúc cố định: cột T=19(Form), U=20(Bắt đầu), V=21(Kết thúc), W=22(Thứ)
+// Header sub-table nằm ở row 1, data từ row 2
+function checkFormActive(rows) {
+  var COL_FORM=19, COL_START=20, COL_END=21, COL_DAY=22;
 
   var dayMap = { 'Sun':0,'Mon':1,'Tue':2,'Wed':3,'Thu':4,'Fri':5,'Sat':6 };
   var now = new Date();
-  var nowDay = now.getDay(); // 0=Sun,...,6=Sat
-  var nowMin = now.getHours()*60 + now.getMinutes();
+  // Convert to Vietnam time (UTC+7)
+  var vnNow = new Date(now.getTime() + 7*60*60*1000);
+  var nowDay = vnNow.getUTCDay();
+  var nowMin = vnNow.getUTCHours()*60 + vnNow.getUTCMinutes();
 
-  for (var i = 1; i < rows.length; i++) {
+  function parseTime(s) {
+    if (!s) return -1;
+    s = s.trim();
+    var isPM = /PM$/i.test(s);
+    var isAM = /AM$/i.test(s);
+    s = s.replace(/\s*(AM|PM)\s*$/i,'');
+    var parts = s.split(':');
+    var h = parseInt(parts[0])||0, m = parseInt(parts[1])||0;
+    if (isPM && h !== 12) h += 12;
+    if (isAM && h === 12) h = 0;
+    return h * 60 + m;
+  }
+
+  function fmtMin(m) { return Math.floor(m/60)+':'+(m%60<10?'0':'')+(m%60); }
+
+  for (var i = 2; i < rows.length; i++) {
     var r = rows[i];
-    if (!r[iForm] || r[iForm].trim() !== FORM_NAME) continue;
+    if (!r[COL_FORM] || r[COL_FORM].trim() !== FORM_NAME) continue;
 
-    // Parse days
-    var days = (r[iThu]||'').split(',').map(function(d){ return dayMap[d.trim()]; });
-    if (days.indexOf(nowDay) < 0) {
-      var dayNames = ['Chủ Nhật','Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7'];
-      return { active: false, reason: 'Form chỉ mở vào: ' + r[iThu] + '\nHôm nay là ' + dayNames[nowDay] };
+    // Check ngày trong tuần
+    var dayStr = (r[COL_DAY]||'').trim();
+    if (dayStr) {
+      var days = dayStr.split(',').map(function(d){ return dayMap[d.trim()]; });
+      if (days.indexOf(nowDay) < 0) {
+        var dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        return { active: false, reason: '🔒 Form chỉ mở vào: ' + dayStr + '\nHôm nay là ' + dayNames[nowDay] };
+      }
     }
 
-    // Parse time (format: H:mm:ss or H:mm:ss AM/PM)
-    function parseTime(s) {
-      if (!s) return 0;
-      s = s.trim().replace(/\s*(AM|PM)\s*$/i, function(m, p) {
-        return p.toUpperCase() === 'PM' ? '__PM' : '__AM';
-      });
-      var parts = s.replace(/__[AP]M$/, '').split(':');
-      var h = parseInt(parts[0])||0, m = parseInt(parts[1])||0;
-      if (/__PM$/.test(s) && h !== 12) h += 12;
-      if (/__AM$/.test(s) && h === 12) h = 0;
-      return h * 60 + m;
+    // Check giờ
+    var startMin = parseTime(r[COL_START]);
+    var endMin = parseTime(r[COL_END]);
+    if (startMin >= 0 && endMin >= 0 && (nowMin < startMin || nowMin > endMin)) {
+      return { active: false, reason: '🕐 Form mở từ ' + fmtMin(startMin) + ' đến ' + fmtMin(endMin) + '\nHiện tại: ' + fmtMin(nowMin) };
     }
 
-    var startMin = parseTime(r[iBatDau]);
-    var endMin = parseTime(r[iKetThuc]);
-    if (nowMin < startMin || nowMin > endMin) {
-      function fmtMin(m) { return Math.floor(m/60)+':'+(m%60<10?'0':'')+(m%60); }
-      return { active: false, reason: 'Form mở từ ' + fmtMin(startMin) + ' đến ' + fmtMin(endMin) + '\nHiện tại: ' + fmtMin(nowMin) };
-    }
     return { active: true };
   }
-  return { active: true }; // Không tìm thấy config → cho phép
+  return { active: true };
 }
 
 // ===== UTILS =====
@@ -392,7 +398,7 @@ function buildData(csvText){
   document.getElementById('dataInfo').textContent='✅ '+mienList.length+' Miền · '+gdvCount+' GĐV · '+totalQLKV+' QLKV · '+totalCH+' CH';
 
   // Check active time
-  var activeCheck = checkFormActive(rows, h);
+  var activeCheck = checkFormActive(rows);
   if (!activeCheck.active) {
     document.getElementById('formClosedBanner').style.display = 'block';
     document.getElementById('formClosedBanner').textContent = '🔒 Form hiện đang đóng\n' + activeCheck.reason;
