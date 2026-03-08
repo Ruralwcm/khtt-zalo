@@ -112,8 +112,6 @@ input.invalid{border-color:#e53935;box-shadow:0 0 0 3px rgba(229,57,53,0.10)}
     <p><span class="data-badge" id="dataInfo">⏳ Đang tải data...</span></p>
   </div>
 
-  <div id="formClosedBanner" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:14px 18px;margin:14px 16px 0;color:#856404;font-size:13.5px;font-weight:600;white-space:pre-line;text-align:center"></div>
-
   <div class="steps">
     <div class="step active" id="s1"><span class="step-num">1</span><span class="step-label">&nbsp;Miền</span></div>
     <div class="step-line" id="l1"></div>
@@ -212,61 +210,6 @@ var DATA = {};
 var MIEN_DATA = {};
 var fileBase64 = null;
 var fileName = '';
-var FORM_NAME = 'KHTT_Zalo'; // Tên form để match cột T
-
-// ===== CHECK ACTIVE TIME =====
-// Cấu trúc cố định: cột T=19(Form), U=20(Bắt đầu), V=21(Kết thúc), W=22(Thứ)
-// Header sub-table nằm ở row 1, data từ row 2
-function checkFormActive(rows) {
-  var COL_FORM=19, COL_START=20, COL_END=21, COL_DAY=22;
-
-  var dayMap = { 'Sun':0,'Mon':1,'Tue':2,'Wed':3,'Thu':4,'Fri':5,'Sat':6 };
-  var now = new Date();
-  // Convert to Vietnam time (UTC+7)
-  var vnNow = new Date(now.getTime() + 7*60*60*1000);
-  var nowDay = vnNow.getUTCDay();
-  var nowMin = vnNow.getUTCHours()*60 + vnNow.getUTCMinutes();
-
-  function parseTime(s) {
-    if (!s) return -1;
-    s = s.trim();
-    var isPM = /PM$/i.test(s);
-    var isAM = /AM$/i.test(s);
-    s = s.replace(/\s*(AM|PM)\s*$/i,'');
-    var parts = s.split(':');
-    var h = parseInt(parts[0])||0, m = parseInt(parts[1])||0;
-    if (isPM && h !== 12) h += 12;
-    if (isAM && h === 12) h = 0;
-    return h * 60 + m;
-  }
-
-  function fmtMin(m) { return Math.floor(m/60)+':'+(m%60<10?'0':'')+(m%60); }
-
-  for (var i = 2; i < rows.length; i++) {
-    var r = rows[i];
-    if (!r[COL_FORM] || r[COL_FORM].trim() !== FORM_NAME) continue;
-
-    // Check ngày trong tuần
-    var dayStr = (r[COL_DAY]||'').trim();
-    if (dayStr) {
-      var days = dayStr.split(',').map(function(d){ return dayMap[d.trim()]; });
-      if (days.indexOf(nowDay) < 0) {
-        var dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-        return { active: false, reason: '🔒 Form chỉ mở vào: ' + dayStr + '\nHôm nay là ' + dayNames[nowDay] };
-      }
-    }
-
-    // Check giờ
-    var startMin = parseTime(r[COL_START]);
-    var endMin = parseTime(r[COL_END]);
-    if (startMin >= 0 && endMin >= 0 && (nowMin < startMin || nowMin > endMin)) {
-      return { active: false, reason: '🕐 Form mở từ ' + fmtMin(startMin) + ' đến ' + fmtMin(endMin) + '\nHiện tại: ' + fmtMin(nowMin) };
-    }
-
-    return { active: true };
-  }
-  return { active: true };
-}
 
 // ===== UTILS =====
 function isValidName(s){ return s && s.length >= 3 && s.indexOf('\uFFFD') < 0; }
@@ -396,15 +339,6 @@ function buildData(csvText){
     qs.forEach(function(q){ totalCH+=DATA[g][q].length; });
   });
   document.getElementById('dataInfo').textContent='✅ '+mienList.length+' Miền · '+gdvCount+' GĐV · '+totalQLKV+' QLKV · '+totalCH+' CH';
-
-  // Check active time
-  var activeCheck = checkFormActive(rows);
-  if (!activeCheck.active) {
-    document.getElementById('formClosedBanner').style.display = 'block';
-    document.getElementById('formClosedBanner').textContent = '🔒 Form hiện đang đóng\n' + activeCheck.reason;
-    document.getElementById('selMien').disabled = true;
-    document.getElementById('btnSubmit').disabled = true;
-  }
 }
 
 // ===== EVENTS =====
