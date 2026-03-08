@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Thống Kê KHTT Zalo</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:linear-gradient(145deg,#e8f5e9 0%,#f0f4f8 60%,#e8f0fe 100%);min-height:100vh;padding:16px 12px}
+.container{max-width:580px;margin:0 auto}
+.card{background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(9,132,59,0.10),0 1px 4px rgba(0,0,0,0.06);overflow:hidden}
+.card-header{background:linear-gradient(135deg,#09843b 0%,#066b30 100%);color:#fff;padding:20px 22px 16px}
+.card-header h1{font-size:17px;font-weight:700}
+.card-header p{font-size:12px;opacity:0.85;margin-top:4px}
+.data-badge{font-size:11px;font-weight:600;opacity:0.9}
+
+.steps{display:flex;align-items:center;padding:13px 20px;background:#fff;border-bottom:1px solid #f0f0f0}
+.step{display:flex;align-items:center;gap:4px;font-size:10.5px;color:#bbb;font-weight:600;flex-shrink:0;transition:color .25s}
+.step.active{color:#09843b}
+.step.done{color:#34a853}
+.step-num{width:20px;height:20px;border-radius:50%;background:#e0e0e0;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .25s}
+.step.active .step-num{background:#09843b;box-shadow:0 0 0 3px rgba(9,132,59,0.18)}
+.step.done .step-num{background:#34a853}
+.step-line{flex:1;height:2px;background:#e0e0e0;margin:0 3px;min-width:4px;transition:background .3s}
+.step-line.done{background:#34a853}
+@media(max-width:400px){.step-label{display:none}}
+
+.card-body{padding:20px 22px}
+.field{margin-bottom:15px}
+.field label{display:block;font-size:11px;font-weight:700;color:#666;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px}
+.field label .req{color:#e53935;margin-left:2px}
+
+select,input[type="text"],input[type="number"],textarea{
+  width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:9px;
+  font-size:14px;color:#222;background:#fff;
+  transition:border-color .18s,box-shadow .18s;-webkit-appearance:none;appearance:none
+}
+select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 11px center;padding-right:34px;cursor:pointer
+}
+select:focus,input:focus,textarea:focus{outline:none;border-color:#09843b;box-shadow:0 0 0 3px rgba(9,132,59,0.11)}
+select:disabled,input:disabled,textarea:disabled{background:#f7f7f7;color:#bbb;cursor:not-allowed;border-color:#ebebeb}
+input.valid{border-color:#34a853;box-shadow:0 0 0 3px rgba(52,168,83,0.10)}
+input.invalid{border-color:#e53935;box-shadow:0 0 0 3px rgba(229,57,53,0.10)}
+
+.helper{font-size:11.5px;color:#888;margin-top:4px;min-height:14px}
+.err{font-size:11.5px;color:#e53935;margin-top:4px;display:none;font-weight:500}
+.ok{font-size:11.5px;color:#34a853;margin-top:4px;display:none;font-weight:500}
+
+/* Upload area */
+.upload-area{
+  border:2px dashed #c8e6c9;border-radius:10px;padding:20px;
+  text-align:center;cursor:pointer;transition:all .2s;background:#f9fef9;
+  position:relative
+}
+.upload-area:hover,.upload-area.drag{border-color:#09843b;background:#f0faf0}
+.upload-area.has-file{border-color:#34a853;background:#f0faf0;border-style:solid}
+.upload-area input[type="file"]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.upload-icon{font-size:28px;margin-bottom:6px}
+.upload-text{font-size:13px;color:#555;font-weight:500}
+.upload-sub{font-size:11.5px;color:#999;margin-top:3px}
+.upload-preview{display:none;margin-top:10px}
+.upload-preview img{max-width:100%;max-height:180px;border-radius:8px;border:1px solid #e0f2e1}
+.upload-preview .fname{font-size:12px;color:#555;margin-top:5px}
+.upload-preview .fsize{font-size:11px;color:#999}
+.remove-file{font-size:11px;color:#e53935;cursor:pointer;font-weight:600;margin-top:4px;display:inline-block}
+.remove-file:hover{text-decoration:underline}
+
+.divider{border:none;border-top:1px solid #f0f0f0;margin:16px 0}
+
+.submit-btn{
+  width:100%;padding:13px;margin-top:18px;
+  background:linear-gradient(135deg,#09843b,#066b30);
+  color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;
+  transition:opacity .18s,transform .1s;box-shadow:0 2px 8px rgba(9,132,59,0.25)
+}
+.submit-btn:hover:not(:disabled){opacity:0.92;transform:translateY(-1px)}
+.submit-btn:disabled{background:linear-gradient(135deg,#c5cfd8,#b0bec5);cursor:not-allowed;transform:none;box-shadow:none}
+
+.loading-overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,0.88);z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.loading-overlay.show{display:flex}
+.spinner{width:42px;height:42px;border:4px solid #e0e0e0;border-top-color:#09843b;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:14px;color:#555;font-weight:500}
+.load-error{display:none;background:#fff3f3;border:1px solid #ffcdd2;border-radius:10px;padding:14px;margin-bottom:14px;text-align:center;color:#c62828;font-size:13px}
+.load-error.show{display:block}
+.retry-btn{margin-top:8px;padding:7px 18px;background:#09843b;color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer;font-weight:600}
+
+.success-card{display:none;background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.10);padding:32px 24px;text-align:center}
+.success-icon{font-size:52px;margin-bottom:10px}
+.success-title{font-size:18px;font-weight:700;color:#2e7d32;margin-bottom:6px}
+.success-sub{font-size:13px;color:#888;margin-bottom:14px}
+.success-detail{font-size:13px;color:#333;line-height:1.7;background:#f5faf5;border-radius:10px;padding:14px 16px;margin-bottom:16px;text-align:left;border:1px solid #e0f2e1}
+.success-detail .row{display:flex;gap:8px;margin-bottom:3px;align-items:baseline}
+.success-detail .lbl{font-size:10.5px;color:#888;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;flex-shrink:0;min-width:90px}
+.success-detail .val{font-weight:700;color:#1a1a1a;word-break:break-word}
+.btn-reset{padding:11px 28px;background:#09843b;color:#fff;border:none;border-radius:9px;font-size:14px;cursor:pointer;font-weight:600}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Đang tải danh sách cửa hàng...</div>
+</div>
+
+<div class="card" id="mainCard">
+  <div class="card-header">
+    <h1>📊 Thống Kê KHTT Zalo</h1>
+    <p><span class="data-badge" id="dataInfo">⏳ Đang tải data...</span></p>
+  </div>
+
+  <div class="steps">
+    <div class="step active" id="s1"><span class="step-num">1</span><span class="step-label">&nbsp;Miền</span></div>
+    <div class="step-line" id="l1"></div>
+    <div class="step" id="s2"><span class="step-num">2</span><span class="step-label">&nbsp;GĐV/QLKV</span></div>
+    <div class="step-line" id="l2"></div>
+    <div class="step" id="s3"><span class="step-num">3</span><span class="step-label">&nbsp;Cửa hàng</span></div>
+    <div class="step-line" id="l3"></div>
+    <div class="step" id="s4"><span class="step-num">4</span><span class="step-label">&nbsp;Báo cáo</span></div>
+  </div>
+
+  <div class="card-body">
+    <div class="load-error" id="loadError">
+      ❌ Không thể tải danh sách từ Google Sheet.<br>
+      <button class="retry-btn" onclick="loadSheetData()">🔄 Thử lại</button>
+    </div>
+
+    <form id="mainForm" autocomplete="off">
+
+      <!-- Miền -->
+      <div class="field">
+        <label>Miền <span class="req">*</span></label>
+        <select id="selMien" required disabled>
+          <option value="">⏳ Đang tải...</option>
+        </select>
+      </div>
+      <hr class="divider">
+
+      <!-- GĐV/QLKV -->
+      <div class="field">
+        <label>GĐV &amp; QLKV <span class="req">*</span></label>
+        <select id="selGDVQLKV" required disabled>
+          <option value="">— Chọn Miền trước —</option>
+        </select>
+        <div class="helper" id="h1"></div>
+      </div>
+      <hr class="divider">
+
+      <!-- Cửa hàng -->
+      <div class="field">
+        <label>Cửa Hàng <span class="req">*</span></label>
+        <select id="selCH" required disabled>
+          <option value="">— Chọn QLKV trước —</option>
+        </select>
+      </div>
+      <hr class="divider">
+
+      <!-- Số lượng KHTT -->
+      <div class="field">
+        <label>Số Lượng KHTT Zalo <span class="req">*</span></label>
+        <input type="text" id="inputKHTT" placeholder="0 – 2,000" inputmode="numeric" disabled>
+        <div class="err" id="errKHTT"></div>
+        <div class="ok" id="okKHTT"></div>
+      </div>
+
+      <!-- Upload ảnh -->
+      <div class="field">
+        <label>Ảnh Chụp Màn Hình Nhóm Zalo <span class="req">*</span></label>
+        <div class="upload-area" id="uploadArea">
+          <input type="file" id="inputFile" accept="image/*" disabled>
+          <div id="uploadPlaceholder">
+            <div class="upload-icon">🖼️</div>
+            <div class="upload-text">Nhấn để chọn ảnh</div>
+            <div class="upload-sub">JPG, PNG · Tối đa 500 KB</div>
+          </div>
+          <div class="upload-preview" id="uploadPreview">
+            <img id="previewImg" src="" alt="Preview">
+            <div class="fname" id="previewName"></div>
+            <div class="fsize" id="previewSize"></div>
+            <span class="remove-file" onclick="removeFile(event)">✕ Xóa ảnh</span>
+          </div>
+        </div>
+        <div class="err" id="errFile"></div>
+        <div class="ok" id="okFile"></div>
+      </div>
+
+      <button type="submit" class="submit-btn" id="btnSubmit" disabled>✅ Gửi Báo Cáo</button>
+    </form>
+  </div>
+</div>
+
+<div class="success-card" id="successCard">
+  <div class="success-icon">🎉</div>
+  <div class="success-title">Đã gửi thành công!</div>
+  <div class="success-sub">Dữ liệu đã được ghi nhận vào sheet KHTT Zalo.</div>
+  <div class="success-detail" id="successDetail"></div>
+  <button class="btn-reset" onclick="resetForm()">➕ Gửi báo cáo khác</button>
+</div>
+
+</div>
+<script>
+var SHEET_ID = '1fMmEm1GC9aei_3oeu2vcadPVsUM9ms9eVhm99d7pF8A';
+var SHEET_NAME = 'Store_list';
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxeW2WtmPzr3GSWUK_NzOW4C3J5Q950Ji2fEswP1kH_HGitUCFJNnr2f00CR4HOFqT-/exec';
+
+var DATA = {};
+var MIEN_DATA = {};
+var fileBase64 = null;
+var fileName = '';
+
+// ===== UTILS =====
+function isValidName(s){ return s && s.length >= 3 && s.indexOf('\uFFFD') < 0; }
+function normKey(s){ return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[đĐ]/g,function(c){return c==='đ'?'d':'D';}).toLowerCase().trim(); }
+function parseCSV(text){
+  var rows=[],lines=text.split('\n');
+  for(var i=0;i<lines.length;i++){
+    var line=lines[i].trim(); if(!line) continue;
+    var cols=[],cur='',inQ=false;
+    for(var j=0;j<line.length;j++){
+      var c=line[j];
+      if(c==='"') inQ=!inQ;
+      else if(c===','&&!inQ){cols.push(cur.trim());cur='';}
+      else cur+=c;
+    }
+    cols.push(cur.trim()); rows.push(cols);
+  }
+  return rows;
+}
+
+// ===== LOAD SHEET =====
+function loadSheetData(){
+  var overlay=document.getElementById('loadingOverlay');
+  var errDiv=document.getElementById('loadError');
+  overlay.classList.add('show');
+  errDiv.classList.remove('show');
+  document.getElementById('selMien').disabled=true;
+  document.getElementById('dataInfo').textContent='⏳ Đang tải data...';
+
+  var urlGviz='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent(SHEET_NAME)+'&t='+Date.now();
+  var urlExport='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/export?format=csv&sheet='+encodeURIComponent(SHEET_NAME)+'&t='+Date.now();
+
+  function tryFetch(url, fallback){
+    return fetch(url,{redirect:'follow'})
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
+      .catch(function(e){
+        if(fallback){ return fetch(fallback,{redirect:'follow'}).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); }); }
+        throw e;
+      });
+  }
+
+  tryFetch(urlGviz, urlExport)
+    .then(function(txt){
+      try{ buildData(txt); overlay.classList.remove('show'); }
+      catch(e){
+        console.error('buildData error:',e);
+        overlay.classList.remove('show');
+        errDiv.innerHTML='❌ Lỗi xử lý data: '+e.message+'<br><button class="retry-btn" onclick="loadSheetData()">🔄 Thử lại</button>';
+        errDiv.classList.add('show');
+      }
+    })
+    .catch(function(e){
+      console.error('Fetch error:',e);
+      overlay.classList.remove('show');
+      errDiv.classList.add('show');
+    });
+}
+
+function buildData(csvText){
+  var rows=parseCSV(csvText);
+  if(rows.length<2) return;
+  var h=rows[0];
+  var iSAP=h.indexOf('Mã SAP'),iTen=h.indexOf('Tên cửa hàng');
+  var iGDV=h.indexOf('GĐV'),iQLKV=h.indexOf('QLKV'),iTT=h.indexOf('Tình Trạng'),iMien=h.indexOf('Miền');
+
+  var gdvKeyMap={},qlkvKeyMap={},mienKeyMap={},gdvMienMap={},raw={};
+  var seenSet=new Set();
+
+  rows.slice(1).forEach(function(r){
+    var gdvRaw=(r[iGDV]||'').trim(),qlkvRaw=(r[iQLKV]||'').trim();
+    var sap=(r[iSAP]||'').trim(),ten=(r[iTen]||'').trim(),tt=(r[iTT]||'').trim();
+    var mienRaw=(r[iMien]||'').trim();
+    if(!isValidName(gdvRaw)||!isValidName(qlkvRaw)||!sap||ten.length<3) return;
+
+    var gk=normKey(gdvRaw);
+    if(!gdvKeyMap[gk]||gdvRaw.length>gdvKeyMap[gk].length) gdvKeyMap[gk]=gdvRaw;
+    var qk=normKey(qlkvRaw);
+    if(!qlkvKeyMap[qk]||qlkvRaw.length>qlkvKeyMap[qk].length) qlkvKeyMap[qk]=qlkvRaw;
+    if(mienRaw.length>=3){
+      var mk=normKey(mienRaw);
+      if(!mienKeyMap[mk]||mienRaw.length>mienKeyMap[mk].length) mienKeyMap[mk]=mienRaw;
+      if(!gdvMienMap[gk]) gdvMienMap[gk]=mienKeyMap[mk];
+    }
+    var gc=gdvKeyMap[gk],qc=qlkvKeyMap[qk];
+    if(!raw[gc]) raw[gc]={};
+    if(!raw[gc][qc]) raw[gc][qc]=[];
+    var uid=sap+'|'+gc+'|'+qc;
+    if(!seenSet.has(uid)){ seenSet.add(uid); raw[gc][qc].push({maSAP:sap,tenCH:ten,trangThai:tt}); }
+  });
+
+  DATA={};
+  Object.keys(raw).forEach(function(gdv){
+    var gc=gdvKeyMap[normKey(gdv)]||gdv;
+    if(!DATA[gc]) DATA[gc]={};
+    Object.keys(raw[gdv]).forEach(function(qlkv){
+      var qc=qlkvKeyMap[normKey(qlkv)]||qlkv;
+      if(!DATA[gc][qc]) DATA[gc][qc]=[];
+      raw[gdv][qlkv].forEach(function(s){
+        if(!DATA[gc][qc].some(function(x){return x.maSAP===s.maSAP;})) DATA[gc][qc].push(s);
+      });
+    });
+  });
+
+  // Build MIEN_DATA
+  MIEN_DATA={};
+  Object.keys(DATA).forEach(function(gdv){
+    var mien=gdvMienMap[normKey(gdv)]||'Khác';
+    if(!MIEN_DATA[mien]) MIEN_DATA[mien]=[];
+    if(MIEN_DATA[mien].indexOf(gdv)<0) MIEN_DATA[mien].push(gdv);
+  });
+
+  // Populate selMien
+  var selMien=document.getElementById('selMien');
+  var mienList=Object.keys(MIEN_DATA).sort(function(a,b){return a.localeCompare(b,'vi');});
+  selMien.innerHTML='<option value="">— Chọn Miền —</option>';
+  mienList.forEach(function(m){
+    var opt=document.createElement('option');
+    opt.value=m; opt.textContent=m;
+    selMien.appendChild(opt);
+  });
+  selMien.disabled=false;
+
+  var gdvCount=Object.keys(DATA).length;
+  var totalQLKV=0,totalCH=0;
+  Object.keys(DATA).forEach(function(g){
+    var qs=Object.keys(DATA[g]); totalQLKV+=qs.length;
+    qs.forEach(function(q){ totalCH+=DATA[g][q].length; });
+  });
+  document.getElementById('dataInfo').textContent='✅ '+mienList.length+' Miền · '+gdvCount+' GĐV · '+totalQLKV+' QLKV · '+totalCH+' CH';
+}
+
+// ===== EVENTS =====
+document.addEventListener('DOMContentLoaded',function(){
+  var selMien=document.getElementById('selMien');
+  var selGDVQLKV=document.getElementById('selGDVQLKV');
+  var selCH=document.getElementById('selCH');
+  var inputKHTT=document.getElementById('inputKHTT');
+  var inputFile=document.getElementById('inputFile');
+  var btnSubmit=document.getElementById('btnSubmit');
+  var h1=document.getElementById('h1');
+
+  // Miền
+  selMien.addEventListener('change',function(){
+    resetFrom(2);
+    if(!this.value){setStep(1);return;}
+    var gdvList=(MIEN_DATA[this.value]||[]).sort(function(a,b){return a.localeCompare(b,'vi');});
+    selGDVQLKV.innerHTML='<option value="">— Chọn GĐV / QLKV —</option>';
+    gdvList.forEach(function(gdv){
+      var og=document.createElement('optgroup');
+      og.label='▶ '+gdv;
+      Object.keys(DATA[gdv]).sort(function(a,b){return a.localeCompare(b,'vi');}).forEach(function(qlkv){
+        var opt=document.createElement('option');
+        opt.value=gdv+'||'+qlkv;
+        opt.textContent=qlkv+' ('+DATA[gdv][qlkv].length+' CH)';
+        og.appendChild(opt);
+      });
+      selGDVQLKV.appendChild(og);
+    });
+    selGDVQLKV.disabled=false;
+    setStep(2);
+  });
+
+  // GĐV/QLKV
+  selGDVQLKV.addEventListener('change',function(){
+    resetFrom(3);
+    if(!this.value){setStep(2);return;}
+    var parts=this.value.split('||'),gdv=parts[0],qlkv=parts[1];
+    var stores=(DATA[gdv]&&DATA[gdv][qlkv])?DATA[gdv][qlkv]:[];
+    h1.textContent=gdv+' · '+qlkv+' · '+stores.length+' CH';
+    selCH.innerHTML='<option value="">— Chọn cửa hàng —</option>';
+    stores.slice().sort(function(a,b){return a.maSAP.localeCompare(b.maSAP);}).forEach(function(s){
+      var opt=document.createElement('option');
+      opt.value=s.maSAP;
+      var lbl=s.maSAP+' – '+s.tenCH;
+      if(s.trangThai&&!/đang hoạt động/i.test(s.trangThai)) lbl+=' ['+s.trangThai+']';
+      opt.textContent=lbl;
+      selCH.appendChild(opt);
+    });
+    selCH.disabled=false;
+    setStep(3);
+  });
+
+  // Cửa hàng
+  selCH.addEventListener('change',function(){
+    resetFrom(4);
+    if(!this.value){setStep(3);return;}
+    inputKHTT.disabled=false;
+    inputKHTT.focus();
+    setStep(4);
+  });
+
+  // KHTT input - chỉ số nguyên
+  inputKHTT.addEventListener('input',function(){
+    this.value=this.value.replace(/[^0-9]/g,'');
+    var valid=validateKHTT(true);
+    // Enable file upload khi KHTT hợp lệ
+    inputFile.disabled=!valid;
+    checkSubmit();
+  });
+  inputKHTT.addEventListener('blur',function(){
+    var valid=validateKHTT(true);
+    inputFile.disabled=!valid;
+    checkSubmit();
+  });
+
+  // File upload
+  inputFile.addEventListener('change',function(){
+    var file=this.files[0];
+    if(!file) return;
+    validateFile(file);
+    checkSubmit();
+  });
+
+  // Drag & drop
+  var area=document.getElementById('uploadArea');
+  area.addEventListener('dragover',function(e){e.preventDefault();this.classList.add('drag');});
+  area.addEventListener('dragleave',function(){this.classList.remove('drag');});
+  area.addEventListener('drop',function(e){
+    e.preventDefault();this.classList.remove('drag');
+    var file=e.dataTransfer.files[0];
+    if(file){ inputFile.files=e.dataTransfer.files; validateFile(file); checkSubmit(); }
+  });
+
+  // Submit
+  document.getElementById('mainForm').addEventListener('submit',function(e){
+    e.preventDefault();
+    if(!selMien.value){alert('Vui lòng chọn Miền');return;}
+    if(!selGDVQLKV.value){alert('Vui lòng chọn GĐV/QLKV');return;}
+    if(!selCH.value){alert('Vui lòng chọn cửa hàng');return;}
+    if(!validateKHTT(true)){inputKHTT.focus();return;}
+    if(!fileBase64){
+      document.getElementById('errFile').textContent='❌ Vui lòng chọn ảnh chụp màn hình';
+      document.getElementById('errFile').style.display='block';
+      return;
+    }
+
+    var parts=selGDVQLKV.value.split('||'),gdv=parts[0],qlkv=parts[1];
+    var maSAP=selCH.value;
+    var tenCH=selCH.options[selCH.selectedIndex].textContent;
+    var soKHTT=parseInt(inputKHTT.value,10);
+    var ts=new Date().toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'});
+
+    btnSubmit.disabled=true;
+    btnSubmit.textContent='⏳ Đang gửi...';
+
+    // Không gửi ảnh trong payload chính (quá lớn gây lỗi)
+    // Ảnh sẽ được upload riêng qua fetch sau khi data chính đã ghi xong
+    var payload={
+      formType:'khtt-zalo',
+      thoiGian:ts,
+      mien:selMien.value,
+      gdv:gdv,
+      qlkv:qlkv,
+      maSAP:maSAP,
+      tenCH:tenCH,
+      ghiChu:soKHTT+' KHTT Zalo',
+      photos:[]
+    };
+
+    // Gửi qua fetch no-cors (đơn giản nhất)
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'},
+      body: JSON.stringify(payload)
+    }).catch(function(err){ console.error('Fetch error:', err); });
+
+    // Hiện success ngay (không chờ response vì no-cors)
+    var d=document.getElementById('successDetail');
+    d.innerHTML=
+      '<div class="row"><span class="lbl">Thời gian</span><span class="val">'+ts+'</span></div>'+
+      '<div class="row"><span class="lbl">Miền</span><span class="val">'+selMien.value+'</span></div>'+
+      '<div class="row"><span class="lbl">GĐV</span><span class="val">'+gdv+'</span></div>'+
+      '<div class="row"><span class="lbl">QLKV</span><span class="val">'+qlkv+'</span></div>'+
+      '<div class="row"><span class="lbl">Cửa hàng</span><span class="val">'+tenCH+'</span></div>'+
+      '<div class="row"><span class="lbl">Số KHTT</span><span class="val" style="color:#09843b;font-size:16px;font-weight:800">'+soKHTT.toLocaleString('vi-VN')+' khách</span></div>'+
+      '<div class="row"><span class="lbl">Ảnh</span><span class="val">'+(fileName?fileName+' ✅':'Không có')+'</span></div>';
+    document.getElementById('mainCard').style.display='none';
+    document.getElementById('successCard').style.display='block';
+  });
+
+  setStep(1);
+  loadSheetData();
+});
+
+// ===== VALIDATE KHTT =====
+function validateKHTT(show){
+  var el=document.getElementById('inputKHTT');
+  var err=document.getElementById('errKHTT');
+  var ok=document.getElementById('okKHTT');
+  var raw=(el.value||'').trim();
+  el.className=''; err.style.display='none'; ok.style.display='none';
+  if(!raw) return false;
+  var n=parseInt(raw,10);
+  if(isNaN(n)||n<0){
+    el.className='invalid';
+    if(show){err.textContent='❌ Số lượng không hợp lệ (tối thiểu 0)';err.style.display='block';}
+    return false;
+  }
+  if(n>2000){
+    el.className='invalid';
+    if(show){err.textContent='❌ Số lượng tối đa là 2,000';err.style.display='block';}
+    return false;
+  }
+  el.className='valid';
+  if(show){ok.textContent='✅ '+n.toLocaleString('vi-VN')+' khách hàng thân thiết';ok.style.display='block';}
+  return true;
+}
+
+// ===== VALIDATE FILE =====
+function validateFile(file){
+  var err=document.getElementById('errFile');
+  var ok=document.getElementById('okFile');
+  err.style.display='none'; ok.style.display='none';
+  fileBase64=null; fileName='';
+
+  var maxSize=500*1024; // 500KB
+  if(!file.type.startsWith('image/')){
+    err.textContent='❌ Vui lòng chọn file ảnh (JPG, PNG)';
+    err.style.display='block';
+    return false;
+  }
+  if(file.size>maxSize){
+    err.textContent='❌ Ảnh vượt quá 500 KB (hiện tại: '+Math.round(file.size/1024)+' KB)';
+    err.style.display='block';
+    return false;
+  }
+
+  // Read as base64
+  var reader=new FileReader();
+  reader.onload=function(e){
+    fileBase64=e.target.result; // data:image/...;base64,...
+    fileName=file.name;
+
+    // Show preview
+    document.getElementById('uploadArea').classList.add('has-file');
+    document.getElementById('uploadPlaceholder').style.display='none';
+    var preview=document.getElementById('uploadPreview');
+    preview.style.display='block';
+    document.getElementById('previewImg').src=fileBase64;
+    document.getElementById('previewName').textContent=file.name;
+    document.getElementById('previewSize').textContent=Math.round(file.size/1024)+' KB';
+    ok.textContent='✅ Ảnh hợp lệ ('+Math.round(file.size/1024)+' KB)';
+    ok.style.display='block';
+    checkSubmit();
+  };
+  reader.readAsDataURL(file);
+  return true;
+}
+
+function removeFile(e){
+  e.stopPropagation();
+  fileBase64=null; fileName='';
+  document.getElementById('inputFile').value='';
+  document.getElementById('uploadArea').classList.remove('has-file');
+  document.getElementById('uploadPlaceholder').style.display='block';
+  document.getElementById('uploadPreview').style.display='none';
+  document.getElementById('previewImg').src='';
+  document.getElementById('okFile').style.display='none';
+  checkSubmit();
+}
+
+// ===== CHECK SUBMIT =====
+function checkSubmit(){
+  var selMien=document.getElementById('selMien');
+  var selGDVQLKV=document.getElementById('selGDVQLKV');
+  var selCH=document.getElementById('selCH');
+  var btnSubmit=document.getElementById('btnSubmit');
+  var ok=selMien.value&&selGDVQLKV.value&&selCH.value&&validateKHTT(false)&&fileBase64;
+  btnSubmit.disabled=!ok;
+}
+
+// ===== STEP =====
+function setStep(n){
+  for(var i=1;i<=4;i++){
+    document.getElementById('s'+i).className='step'+(i<n?' done':i===n?' active':'');
+    if(i<4) document.getElementById('l'+i).className='step-line'+(i<n?' done':'');
+  }
+}
+
+// ===== RESET FROM =====
+function resetFrom(n){
+  var selGDVQLKV=document.getElementById('selGDVQLKV');
+  var selCH=document.getElementById('selCH');
+  var inputKHTT=document.getElementById('inputKHTT');
+  var h1=document.getElementById('h1');
+  if(n<=2){
+    selGDVQLKV.innerHTML='<option value="">— Chọn Miền trước —</option>';
+    selGDVQLKV.disabled=true; h1.textContent='';
+  }
+  if(n<=3){ selCH.innerHTML='<option value="">— Chọn QLKV trước —</option>'; selCH.disabled=true; }
+  if(n<=4){
+    inputKHTT.disabled=true; inputKHTT.value=''; inputKHTT.className='';
+    document.getElementById('errKHTT').style.display='none';
+    document.getElementById('okKHTT').style.display='none';
+    document.getElementById('inputFile').disabled=true;
+    removeFile({stopPropagation:function(){}});
+    document.getElementById('inputFile').disabled=true;
+  }
+  document.getElementById('btnSubmit').disabled=true;
+}
+
+// ===== RESET FORM =====
+function resetForm(){
+  document.getElementById('mainForm').reset();
+  document.getElementById('selMien').value='';
+  resetFrom(2);
+  // Re-enable file input after reset
+  document.getElementById('inputFile').disabled=true;
+  setStep(1);
+  document.getElementById('btnSubmit').textContent='✅ Gửi Báo Cáo';
+  document.getElementById('successCard').style.display='none';
+  document.getElementById('mainCard').style.display='block';
+}
+</script>
+</body>
+</html>
