@@ -317,9 +317,14 @@ function loadSheetData(){
 function buildData(csvText){
   var rows=parseCSV(csvText);
   if(rows.length<2) return;
+  // gviz doi khi them hang trang o dau
   var h=rows[0];
-  var iSAP=h.indexOf('Mã SAP'),iTen=h.indexOf('Tên cửa hàng');
-  var iGDV=h.indexOf('GĐV'),iQLKV=h.indexOf('QLKV'),iTT=h.indexOf('Tình Trạng'),iMien=h.indexOf('Miền');
+  if(h[0]==='' && rows.length>1 && rows[1][0]!=='') { rows.shift(); h=rows[0]; }
+  var iSAP=h.indexOf('Mã SAP'); if(iSAP<0) iSAP=0; var iTen=h.indexOf('Tên cửa hàng'); if(iTen<0) iTen=1;
+  var iGDV=h.indexOf('GĐV'); if(iGDV<0) iGDV=8;
+  var iQLKV=h.indexOf('QLKV'); if(iQLKV<0) iQLKV=7;
+  var iTT=h.indexOf('Tình Trạng'); if(iTT<0) iTT=2;
+  var iMien=h.indexOf('Miền'); if(iMien<0) iMien=4;
 
   var gdvKeyMap={},qlkvKeyMap={},mienKeyMap={},gdvMienMap={},raw={};
   var seenSet=new Set();
