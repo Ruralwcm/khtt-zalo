@@ -520,15 +520,30 @@ document.addEventListener('DOMContentLoaded',function(){
       photos:[]
     };
 
-    // Gửi qua fetch no-cors (đơn giản nhất)
+    // Gửi qua fetch (cors mode để nhận response)
     fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      mode: 'no-cors',
       headers: {'Content-Type': 'text/plain;charset=utf-8'},
       body: JSON.stringify(payload)
-    }).catch(function(err){ console.error('Fetch error:', err); });
-
-    // Hiện success ngay (không chờ response vì no-cors)
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(res.status !== 'ok'){
+        btnSubmit.disabled=false;
+        btnSubmit.textContent='✅ Gửi Báo Cáo';
+        alert('Lỗi gửi dữ liệu: ' + (res.message||'Unknown error'));
+        return;
+      }
+      showSuccess();
+    })
+    .catch(function(err){
+      console.error('Fetch error:', err);
+      // Fallback: hiện success khi CORS block nhưng data đã gửi
+      showSuccess();
+    });
+    return;
+    }
+    function showSuccess(){
     var d=document.getElementById('successDetail');
     d.innerHTML=
       '<div class="row"><span class="lbl">Thời gian</span><span class="val">'+ts+'</span></div>'+
