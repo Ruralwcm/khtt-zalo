@@ -317,10 +317,10 @@ function loadSheetData(){
 function buildData(csvText){
   var rows=parseCSV(csvText);
   if(rows.length<2) return;
-  // gviz doi khi them hang trang o dau
   var h=rows[0];
   if(h[0]==='' && rows.length>1 && rows[1][0]!=='') { rows.shift(); h=rows[0]; }
-  var iSAP=h.indexOf('Mã SAP'); if(iSAP<0) iSAP=0; var iTen=h.indexOf('Tên cửa hàng'); if(iTen<0) iTen=1;
+  var iSAP=h.indexOf('Mã SAP'); if(iSAP<0) iSAP=0;
+  var iTen=h.indexOf('Tên cửa hàng'); if(iTen<0) iTen=1;
   var iGDV=h.indexOf('GĐV'); if(iGDV<0) iGDV=8;
   var iQLKV=h.indexOf('QLKV'); if(iQLKV<0) iQLKV=7;
   var iTT=h.indexOf('Tình Trạng'); if(iTT<0) iTT=2;
@@ -339,11 +339,14 @@ function buildData(csvText){
     if(!gdvKeyMap[gk]||gdvRaw.length>gdvKeyMap[gk].length) gdvKeyMap[gk]=gdvRaw;
     var qk=normKey(qlkvRaw);
     if(!qlkvKeyMap[qk]||qlkvRaw.length>qlkvKeyMap[qk].length) qlkvKeyMap[qk]=qlkvRaw;
+
+    // FIX: dòng bị lỗi trước đây — khai báo mk đúng cú pháp
     if(mienRaw.length>=3){
       var mk=normKey(mienRaw);
       if(!mienKeyMap[mk]||mienRaw.length>mienKeyMap[mk].length) mienKeyMap[mk]=mienRaw;
       if(!gdvMienMap[gk]) gdvMienMap[gk]=mienKeyMap[mk];
     }
+
     var gc=gdvKeyMap[gk],qc=qlkvKeyMap[qk];
     if(!raw[gc]) raw[gc]={};
     if(!raw[gc][qc]) raw[gc][qc]=[];
@@ -452,11 +455,10 @@ document.addEventListener('DOMContentLoaded',function(){
     setStep(4);
   });
 
-  // KHTT input - chỉ số nguyên
+  // KHTT input
   inputKHTT.addEventListener('input',function(){
     this.value=this.value.replace(/[^0-9]/g,'');
     var valid=validateKHTT(true);
-    // Enable file upload khi KHTT hợp lệ
     inputFile.disabled=!valid;
     checkSubmit();
   });
@@ -484,7 +486,7 @@ document.addEventListener('DOMContentLoaded',function(){
     if(file){ inputFile.files=e.dataTransfer.files; validateFile(file); checkSubmit(); }
   });
 
-  // Submit
+  // Submit — FIX: đóng đúng scope, showSuccess nằm trong event listener
   document.getElementById('mainForm').addEventListener('submit',function(e){
     e.preventDefault();
     if(!selMien.value){alert('Vui lòng chọn Miền');return;}
@@ -506,8 +508,6 @@ document.addEventListener('DOMContentLoaded',function(){
     btnSubmit.disabled=true;
     btnSubmit.textContent='⏳ Đang gửi...';
 
-    // Không gửi ảnh trong payload chính (quá lớn gây lỗi)
-    // Ảnh sẽ được upload riêng qua fetch sau khi data chính đã ghi xong
     var payload={
       formType:'khtt-zalo',
       thoiGian:ts,
@@ -520,7 +520,6 @@ document.addEventListener('DOMContentLoaded',function(){
       photos:[]
     };
 
-    // Gửi qua fetch (cors mode để nhận response)
     fetch(APPS_SCRIPT_URL, {
       method: 'POST',
       headers: {'Content-Type': 'text/plain;charset=utf-8'},
@@ -538,23 +537,22 @@ document.addEventListener('DOMContentLoaded',function(){
     })
     .catch(function(err){
       console.error('Fetch error:', err);
-      // Fallback: hiện success khi CORS block nhưng data đã gửi
       showSuccess();
     });
-    return;
-    }
+
     function showSuccess(){
-    var d=document.getElementById('successDetail');
-    d.innerHTML=
-      '<div class="row"><span class="lbl">Thời gian</span><span class="val">'+ts+'</span></div>'+
-      '<div class="row"><span class="lbl">Miền</span><span class="val">'+selMien.value+'</span></div>'+
-      '<div class="row"><span class="lbl">GĐV</span><span class="val">'+gdv+'</span></div>'+
-      '<div class="row"><span class="lbl">QLKV</span><span class="val">'+qlkv+'</span></div>'+
-      '<div class="row"><span class="lbl">Cửa hàng</span><span class="val">'+tenCH+'</span></div>'+
-      '<div class="row"><span class="lbl">Số KHTT</span><span class="val" style="color:#09843b;font-size:16px;font-weight:800">'+soKHTT.toLocaleString('vi-VN')+' khách</span></div>'+
-      '<div class="row"><span class="lbl">Ảnh</span><span class="val">'+(fileName?fileName+' ✅':'Không có')+'</span></div>';
-    document.getElementById('mainCard').style.display='none';
-    document.getElementById('successCard').style.display='block';
+      var d=document.getElementById('successDetail');
+      d.innerHTML=
+        '<div class="row"><span class="lbl">Thời gian</span><span class="val">'+ts+'</span></div>'+
+        '<div class="row"><span class="lbl">Miền</span><span class="val">'+selMien.value+'</span></div>'+
+        '<div class="row"><span class="lbl">GĐV</span><span class="val">'+gdv+'</span></div>'+
+        '<div class="row"><span class="lbl">QLKV</span><span class="val">'+qlkv+'</span></div>'+
+        '<div class="row"><span class="lbl">Cửa hàng</span><span class="val">'+tenCH+'</span></div>'+
+        '<div class="row"><span class="lbl">Số KHTT</span><span class="val" style="color:#09843b;font-size:16px;font-weight:800">'+soKHTT.toLocaleString('vi-VN')+' khách</span></div>'+
+        '<div class="row"><span class="lbl">Ảnh</span><span class="val">'+(fileName?fileName+' ✅':'Không có')+'</span></div>';
+      document.getElementById('mainCard').style.display='none';
+      document.getElementById('successCard').style.display='block';
+    }
   });
 
   setStep(1);
@@ -592,7 +590,7 @@ function validateFile(file){
   err.style.display='none'; ok.style.display='none';
   fileBase64=null; fileName='';
 
-  var maxSize=500*1024; // 500KB
+  var maxSize=500*1024;
   if(!file.type.startsWith('image/')){
     err.textContent='❌ Vui lòng chọn file ảnh (JPG, PNG)';
     err.style.display='block';
@@ -604,13 +602,10 @@ function validateFile(file){
     return false;
   }
 
-  // Read as base64
   var reader=new FileReader();
   reader.onload=function(e){
-    fileBase64=e.target.result; // data:image/...;base64,...
+    fileBase64=e.target.result;
     fileName=file.name;
-
-    // Show preview
     document.getElementById('uploadArea').classList.add('has-file');
     document.getElementById('uploadPlaceholder').style.display='none';
     var preview=document.getElementById('uploadPreview');
@@ -683,7 +678,6 @@ function resetForm(){
   document.getElementById('mainForm').reset();
   document.getElementById('selMien').value='';
   resetFrom(2);
-  // Re-enable file input after reset
   document.getElementById('inputFile').disabled=true;
   setStep(1);
   document.getElementById('btnSubmit').textContent='✅ Gửi Báo Cáo';
