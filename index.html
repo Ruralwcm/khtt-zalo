@@ -517,7 +517,7 @@ document.addEventListener('DOMContentLoaded',function(){
       maSAP:maSAP,
       tenCH:tenCH,
       ghiChu:soKHTT,
-      photos:[]
+      photos: fileBase64 ? [fileBase64] : []
     };
 
     fetch(APPS_SCRIPT_URL, {
