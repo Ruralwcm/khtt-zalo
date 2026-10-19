@@ -7,23 +7,23 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=IBM+Plex+Sans+Condensed:wght@400;600;700&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',Arial,sans-serif;background:linear-gradient(145deg,#e8f5e9 0%,#f0f4f8 60%,#e8f0fe 100%);min-height:100vh;padding:16px 12px}
+body{font-family:'Segoe UI',Arial,sans-serif;background:linear-gradient(145deg,#e8f0fe 0%,#f0f4f8 60%,#e8f0fe 100%);min-height:100vh;padding:16px 12px}
 .container{max-width:580px;margin:0 auto}
 .card{background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(9,132,59,0.10),0 1px 4px rgba(0,0,0,0.06);overflow:hidden}
-.card-header{background:linear-gradient(135deg,#09843b 0%,#066b30 100%);color:#fff;padding:20px 22px 16px}
+.card-header{background:linear-gradient(135deg,#1a3c6e 0%,#066b30 100%);color:#fff;padding:20px 22px 16px}
 .card-header h1{font-size:17px;font-weight:700}
 .card-header p{font-size:12px;opacity:0.85;margin-top:4px}
 .data-badge{font-size:11px;font-weight:600;opacity:0.9}
 
 .steps{display:flex;align-items:center;padding:13px 20px;background:#fff;border-bottom:1px solid #f0f0f0}
 .step{display:flex;align-items:center;gap:4px;font-size:10.5px;color:#bbb;font-weight:600;flex-shrink:0;transition:color .25s}
-.step.active{color:#09843b}
-.step.done{color:#34a853}
+.step.active{color:#1a3c6e}
+.step.done{color:#1a3c6e}
 .step-num{width:20px;height:20px;border-radius:50%;background:#e0e0e0;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .25s}
-.step.active .step-num{background:#09843b;box-shadow:0 0 0 3px rgba(9,132,59,0.18)}
-.step.done .step-num{background:#34a853}
+.step.active .step-num{background:#1a3c6e;box-shadow:0 0 0 3px rgba(9,132,59,0.18)}
+.step.done .step-num{background:#1a3c6e}
 .step-line{flex:1;height:2px;background:#e0e0e0;margin:0 3px;min-width:4px;transition:background .3s}
-.step-line.done{background:#34a853}
+.step-line.done{background:#1a3c6e}
 @media(max-width:400px){.step-label{display:none}}
 
 .card-body{padding:20px 22px}
@@ -40,14 +40,14 @@ select{
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 11px center;padding-right:34px;cursor:pointer
 }
-select:focus,input:focus,textarea:focus{outline:none;border-color:#09843b;box-shadow:0 0 0 3px rgba(9,132,59,0.11)}
+select:focus,input:focus,textarea:focus{outline:none;border-color:#1a3c6e;box-shadow:0 0 0 3px rgba(9,132,59,0.11)}
 select:disabled,input:disabled,textarea:disabled{background:#f7f7f7;color:#bbb;cursor:not-allowed;border-color:#ebebeb}
-input.valid{border-color:#34a853;box-shadow:0 0 0 3px rgba(52,168,83,0.10)}
+input.valid{border-color:#1a3c6e;box-shadow:0 0 0 3px rgba(52,168,83,0.10)}
 input.invalid{border-color:#e53935;box-shadow:0 0 0 3px rgba(229,57,53,0.10)}
 
 .helper{font-size:11.5px;color:#888;margin-top:4px;min-height:14px}
 .err{font-size:11.5px;color:#e53935;margin-top:4px;display:none;font-weight:500}
-.ok{font-size:11.5px;color:#34a853;margin-top:4px;display:none;font-weight:500}
+.ok{font-size:11.5px;color:#1a3c6e;margin-top:4px;display:none;font-weight:500}
 
 /* Upload area */
 .upload-area{
@@ -55,8 +55,8 @@ input.invalid{border-color:#e53935;box-shadow:0 0 0 3px rgba(229,57,53,0.10)}
   text-align:center;cursor:pointer;transition:all .2s;background:#f9fef9;
   position:relative
 }
-.upload-area:hover,.upload-area.drag{border-color:#09843b;background:#f0faf0}
-.upload-area.has-file{border-color:#34a853;background:#f0faf0;border-style:solid}
+.upload-area:hover,.upload-area.drag{border-color:#1a3c6e;background:#e8f0fe}
+.upload-area.has-file{border-color:#1a3c6e;background:#e8f0fe;border-style:solid}
 .upload-area input[type="file"]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
 .upload-icon{font-size:28px;margin-bottom:6px}
 .upload-text{font-size:13px;color:#555;font-weight:500}
@@ -72,7 +72,7 @@ input.invalid{border-color:#e53935;box-shadow:0 0 0 3px rgba(229,57,53,0.10)}
 
 .submit-btn{
   width:100%;padding:13px;margin-top:18px;
-  background:linear-gradient(135deg,#09843b,#066b30);
+  background:linear-gradient(135deg,#1a3c6e,#066b30);
   color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;
   transition:opacity .18s,transform .1s;box-shadow:0 2px 8px rgba(9,132,59,0.25)
 }
@@ -81,22 +81,22 @@ input.invalid{border-color:#e53935;box-shadow:0 0 0 3px rgba(229,57,53,0.10)}
 
 .loading-overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,0.88);z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:14px}
 .loading-overlay.show{display:flex}
-.spinner{width:42px;height:42px;border:4px solid #e0e0e0;border-top-color:#09843b;border-radius:50%;animation:spin 0.8s linear infinite}
+.spinner{width:42px;height:42px;border:4px solid #e0e0e0;border-top-color:#1a3c6e;border-radius:50%;animation:spin 0.8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-text{font-size:14px;color:#555;font-weight:500}
 .load-error{display:none;background:#fff3f3;border:1px solid #ffcdd2;border-radius:10px;padding:14px;margin-bottom:14px;text-align:center;color:#c62828;font-size:13px}
 .load-error.show{display:block}
-.retry-btn{margin-top:8px;padding:7px 18px;background:#09843b;color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer;font-weight:600}
+.retry-btn{margin-top:8px;padding:7px 18px;background:#1a3c6e;color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer;font-weight:600}
 
 .success-card{display:none;background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.10);padding:32px 24px;text-align:center}
 .success-icon{font-size:52px;margin-bottom:10px}
-.success-title{font-size:18px;font-weight:700;color:#2e7d32;margin-bottom:6px}
+.success-title{font-size:18px;font-weight:700;color:#1a3c6e;margin-bottom:6px}
 .success-sub{font-size:13px;color:#888;margin-bottom:14px}
 .success-detail{font-size:13px;color:#333;line-height:1.7;background:#f5faf5;border-radius:10px;padding:14px 16px;margin-bottom:16px;text-align:left;border:1px solid #e0f2e1}
 .success-detail .row{display:flex;gap:8px;margin-bottom:3px;align-items:baseline}
 .success-detail .lbl{font-size:10.5px;color:#888;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;flex-shrink:0;min-width:90px}
 .success-detail .val{font-weight:700;color:#1a1a1a;word-break:break-word}
-.btn-reset{padding:11px 28px;background:#09843b;color:#fff;border:none;border-radius:9px;font-size:14px;cursor:pointer;font-weight:600}
+.btn-reset{padding:11px 28px;background:#1a3c6e;color:#fff;border:none;border-radius:9px;font-size:14px;cursor:pointer;font-weight:600}
 
 @media (prefers-color-scheme: dark) {
   body{background:#0f1724;color:#e8ecf1}
@@ -234,7 +234,7 @@ input.invalid{border-color:#e53935;box-shadow:0 0 0 3px rgba(229,57,53,0.10)}
             :'Thứ Sáu tuần sau lúc 12:00';
     document.body.innerHTML=
       '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;'+
-      'background:linear-gradient(145deg,#e8f5e9 0%,#f0f4f8 60%,#e8f0fe 100%);padding:20px;'+
+      'background:linear-gradient(145deg,#e8f0fe 0%,#f0f4f8 60%,#e8f0fe 100%);padding:20px;'+
       'font-family:Segoe UI,Arial,sans-serif">'+
       '<div style="background:#fff;border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,0.12);'+
       'max-width:440px;width:100%;overflow:hidden;text-align:center">'+
@@ -245,14 +245,14 @@ input.invalid{border-color:#e53935;box-shadow:0 0 0 3px rgba(229,57,53,0.10)}
       '<div style="padding:24px 28px">'+
       '<p style="color:#555;font-size:14px;line-height:1.7;margin-bottom:20px">'+
       'Form chỉ nhận báo cáo trong khung giờ:<br>'+
-      '<strong style="color:#09843b;font-size:15px">🕛 Thứ Sáu 12:00 – Chủ Nhật 23:00</strong><br>'+
+      '<strong style="color:#1a3c6e;font-size:15px">🕛 Thứ Sáu 12:00 – Chủ Nhật 23:00</strong><br>'+
       '<span style="font-size:12px;color:#888">hàng tuần (giờ Việt Nam)</span></p>'+
       '<div style="background:#f5f5f5;border-radius:10px;padding:14px 16px;margin-bottom:16px;text-align:left">'+
       '<div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:4px">Thời gian hiện tại</div>'+
       '<div style="font-size:16px;font-weight:700;color:#333">'+nowStr+'</div></div>'+
-      '<div style="background:#e8f5e9;border:1px solid #c8e6c9;border-radius:10px;padding:14px 16px;margin-bottom:20px">'+
-      '<div style="font-size:12px;color:#2e7d32;font-weight:700;margin-bottom:4px">📅 Mở lại vào</div>'+
-      '<div style="font-size:14px;color:#1b5e20;font-weight:600">'+next+'</div></div>'+
+      '<div style="background:#e8f0fe;border:1px solid #c8e6c9;border-radius:10px;padding:14px 16px;margin-bottom:20px">'+
+      '<div style="font-size:12px;color:#1a3c6e;font-weight:700;margin-bottom:4px">📅 Mở lại vào</div>'+
+      '<div style="font-size:14px;color:#1a3c6e;font-weight:600">'+next+'</div></div>'+
       '<p style="font-size:12px;color:#aaa">Liên hệ quản lý vùng nếu cần hỗ trợ.</p>'+
       '</div></div></div>';
   }
@@ -559,7 +559,7 @@ document.addEventListener('DOMContentLoaded',function(){
         '<div class="row"><span class="lbl">GĐV</span><span class="val">'+gdv+'</span></div>'+
         '<div class="row"><span class="lbl">QLKV</span><span class="val">'+qlkv+'</span></div>'+
         '<div class="row"><span class="lbl">Cửa hàng</span><span class="val">'+tenCH+'</span></div>'+
-        '<div class="row"><span class="lbl">Số KHTT</span><span class="val" style="color:#09843b;font-size:16px;font-weight:800">'+soKHTT.toLocaleString('vi-VN')+' khách</span></div>'+
+        '<div class="row"><span class="lbl">Số KHTT</span><span class="val" style="color:#1a3c6e;font-size:16px;font-weight:800">'+soKHTT.toLocaleString('vi-VN')+' khách</span></div>'+
         '<div class="row"><span class="lbl">Ảnh</span><span class="val">'+(fileName?fileName+' ✅':'Không có')+'</span></div>';
       document.getElementById('mainCard').style.display='none';
       document.getElementById('successCard').style.display='block';
