@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Thống Kê KHTT Zalo</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=IBM+Plex+Sans+Condensed:wght@400;600;700&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Arial,sans-serif;background:linear-gradient(145deg,#e8f5e9 0%,#f0f4f8 60%,#e8f0fe 100%);min-height:100vh;padding:16px 12px}
 .container{max-width:580px;margin:0 auto}
@@ -96,6 +97,16 @@ input.invalid{border-color:#e53935;box-shadow:0 0 0 3px rgba(229,57,53,0.10)}
 .success-detail .lbl{font-size:10.5px;color:#888;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;flex-shrink:0;min-width:90px}
 .success-detail .val{font-weight:700;color:#1a1a1a;word-break:break-word}
 .btn-reset{padding:11px 28px;background:#09843b;color:#fff;border:none;border-radius:9px;font-size:14px;cursor:pointer;font-weight:600}
+
+@media (prefers-color-scheme: dark) {
+  body{background:#0f1724;color:#e8ecf1}
+  .card,.stat-card,.app-card,.modal,.confirm-box,.login-box{background:#1a2332;border-color:#2a3646}
+  thead th{background:#1a2332;color:#cbd5e1;border-bottom-color:#2a3646}
+  td{border-bottom-color:#2a3646}
+  .sidebar{background:#0a2a24}
+  .topbar{background:#b3121b}
+  input,select,textarea{background:#1a2332;color:#e8ecf1;border-color:#2a3646}
+}
 </style>
 </head>
 <body>
