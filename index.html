@@ -287,6 +287,9 @@ function parseCSV(text){
   return rows;
 }
 
+// ===== STATIC STORELIST =====
+var STATIC_STORELIST_URL = 'storelist.json';
+
 // ===== LOAD SHEET =====
 function loadSheetData(){
   var overlay=document.getElementById('loadingOverlay');
@@ -308,20 +311,43 @@ function loadSheetData(){
       });
   }
 
-  tryFetch(urlGviz, urlExport)
-    .then(function(txt){
-      try{ buildData(txt); overlay.classList.remove('show'); }
-      catch(e){
-        console.error('buildData error:',e);
-        overlay.classList.remove('show');
-        errDiv.innerHTML='❌ Lỗi xử lý data: '+e.message+'<br><button class="retry-btn" onclick="loadSheetData()">🔄 Thử lại</button>';
-        errDiv.classList.add('show');
-      }
-    })
-    .catch(function(e){
-      console.error('Fetch error:',e);
+  function jsonToCSV(jsonData){
+    if(!jsonData||!jsonData.length) return '';
+    var header='Mã SAP,Tên cửa hàng,Tình Trạng,Khai Trương,Miền,Tỉnh/TP,Quận/huyện,QLKV,GĐV,Vĩ độ,Kinh độ';
+    var keys=['maSAP','tenCH','tinhTrang','khaiTruong','mien','tinhTP','quanHuyen','qlkv','gdv','lat','lng'];
+    var lines=[header];
+    jsonData.forEach(function(s){
+      var row=keys.map(function(k){ var v=s[k]||''; return v.indexOf(',')>=0||v.indexOf('"')>=0?'"'+v.replace(/"/g,'""')+'"':v; });
+      lines.push(row.join(','));
+    });
+    return lines.join('\n');
+  }
+
+  // Try static JSON first, fallback to Google Sheets
+  fetch(STATIC_STORELIST_URL, {redirect:'follow'})
+    .then(function(r){ if(!r.ok) throw new Error('static fail'); return r.json(); })
+    .then(function(jsonData){
+      var csv = jsonToCSV(jsonData);
+      buildData(csv);
       overlay.classList.remove('show');
-      errDiv.classList.add('show');
+    })
+    .catch(function(){
+      // Fallback to Google Sheets
+      tryFetch(urlGviz, urlExport)
+        .then(function(txt){
+          try{ buildData(txt); overlay.classList.remove('show'); }
+          catch(e){
+            console.error('buildData error:',e);
+            overlay.classList.remove('show');
+            errDiv.innerHTML='❌ Lỗi xử lý data: '+e.message+'<br><button class="retry-btn" onclick="loadSheetData()">🔄 Thử lại</button>';
+            errDiv.classList.add('show');
+          }
+        })
+        .catch(function(e){
+          console.error('Fetch error:',e);
+          overlay.classList.remove('show');
+          errDiv.classList.add('show');
+        });
     });
 }
 
