@@ -165,6 +165,12 @@ input.invalid{border-color:#e53935;box-shadow:0 0 0 3px rgba(229,57,53,0.10)}
         <input type="text" id="inputKHTT" placeholder="0 – 2,000" inputmode="numeric" disabled>
         <div class="err" id="errKHTT"></div>
         <div class="ok" id="okKHTT"></div>
+        <!-- Lịch sử KHTT -->
+        <div id="khttHistory" style="display:none;margin-top:6px;background:#f5f7fa;border-radius:8px;padding:10px 12px;font-size:11.5px;color:#555;line-height:1.7">
+          <div style="font-weight:700;color:#333;margin-bottom:4px">📊 Lịch sử 3 lần gần nhất</div>
+          <div id="khttHistoryList"></div>
+          <div id="khttWarn" style="display:none;margin-top:6px;padding:6px 8px;background:#fff3e0;border-left:3px solid #ff9800;border-radius:4px;color:#e65100;font-weight:600;font-size:11px"></div>
+        </div>
       </div>
 
       <!-- Upload ảnh -->
@@ -464,19 +470,21 @@ document.addEventListener('DOMContentLoaded',function(){
     inputKHTT.disabled=false;
     inputKHTT.focus();
     setStep(4);
+    showKHTTHistory(this.value);
   });
 
-  // KHTT input - chỉ số nguyên
+  // KHTT input - chỉ số nguyên + cảnh báo chênh lệch
   inputKHTT.addEventListener('input',function(){
     this.value=this.value.replace(/[^0-9]/g,'');
     var valid=validateKHTT(true);
-    // Enable file upload khi KHTT hợp lệ
     inputFile.disabled=!valid;
+    checkKHTTDelta();
     checkSubmit();
   });
   inputKHTT.addEventListener('blur',function(){
     var valid=validateKHTT(true);
     inputFile.disabled=!valid;
+    checkKHTTDelta();
     checkSubmit();
   });
 
@@ -548,10 +556,12 @@ document.addEventListener('DOMContentLoaded',function(){
         alert('Lỗi gửi dữ liệu: ' + (res.message||'Unknown error'));
         return;
       }
+      saveKHTTHistory(maSAP, soKHTT);
       showSuccess();
     })
     .catch(function(err){
       console.error('Fetch error:', err);
+      saveKHTTHistory(maSAP, soKHTT);
       showSuccess();
     });
   });
@@ -710,6 +720,74 @@ function validateKHTT(show){
   return true;
 }
 
+// ===== KHTT HISTORY & DELTA WARNING =====
+var khttHistoryCache = {}; // sap -> [{date, val}]
+
+function loadKHTTHistory(){
+  try {
+    var raw = localStorage.getItem('khtt_history');
+    if(raw){ khttHistoryCache = JSON.parse(raw); }
+    else { khttHistoryCache = {}; }
+  } catch(e){ khttHistoryCache = {}; }
+}
+
+function saveKHTTHistory(sap, val){
+  if(!khttHistoryCache[sap]) khttHistoryCache[sap] = [];
+  var now = new Date();
+  var dd = String(now.getDate()).padStart(2,'0');
+  var mm = String(now.getMonth()+1).padStart(2,'0');
+  var dateStr = dd+'/'+mm;
+  khttHistoryCache[sap].push({ date: dateStr, val: val, ts: now.getTime() });
+  // Keep only last 10 entries
+  if(khttHistoryCache[sap].length > 10) khttHistoryCache[sap] = khttHistoryCache[sap].slice(-10);
+  try { localStorage.setItem('khtt_history', JSON.stringify(khttHistoryCache)); } catch(e){}
+}
+
+function showKHTTHistory(sap){
+  loadKHTTHistory();
+  var history = khttHistoryCache[sap] || [];
+  var histDiv = document.getElementById('khttHistory');
+  var histList = document.getElementById('khttHistoryList');
+  
+  if(history.length === 0){
+    histDiv.style.display = 'none';
+    return;
+  }
+  
+  var last3 = history.slice(-3).reverse();
+  var html = '';
+  last3.forEach(function(h, i){
+    var cls = i === 0 ? 'color:#09843b;font-weight:700' : 'color:#888';
+    html += '<div style="'+cls+'">• '+h.date+': <b>'+h.val.toLocaleString('vi-VN')+'</b> khách</div>';
+  });
+  histList.innerHTML = html;
+  histDiv.style.display = 'block';
+  document.getElementById('khttWarn').style.display = 'none';
+}
+
+function checkKHTTDelta(){
+  var sap = document.getElementById('selCH').value;
+  if(!sap) return;
+  loadKHTTHistory();
+  var history = khttHistoryCache[sap] || [];
+  if(history.length === 0) return;
+  
+  var current = parseInt(document.getElementById('inputKHTT').value, 10);
+  if(isNaN(current)) return;
+  
+  var last = history[history.length - 1].val;
+  var delta = current - last;
+  var warnDiv = document.getElementById('khttWarn');
+  
+  if(Math.abs(delta) >= 20){
+    var dir = delta > 0 ? '▲ tăng' : '▼ giảm';
+    warnDiv.innerHTML = '⚠️ Chênh lệch <b>'+dir+' '+Math.abs(delta)+'</b> so với lần gần nhất ('+last.toLocaleString('vi-VN')+'). Vui lòng xác nhận lại!';
+    warnDiv.style.display = 'block';
+  } else {
+    warnDiv.style.display = 'none';
+  }
+}
+
 // ===== VALIDATE FILE =====
 function validateFile(file){
   var err=document.getElementById('errFile');
@@ -796,6 +874,8 @@ function resetFrom(n){
     inputKHTT.disabled=true; inputKHTT.value=''; inputKHTT.className='';
     document.getElementById('errKHTT').style.display='none';
     document.getElementById('okKHTT').style.display='none';
+    document.getElementById('khttHistory').style.display='none';
+    document.getElementById('khttWarn').style.display='none';
     document.getElementById('inputFile').disabled=true;
     removeFile({stopPropagation:function(){}});
     document.getElementById('inputFile').disabled=true;
