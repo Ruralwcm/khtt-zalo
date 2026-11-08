@@ -203,24 +203,29 @@ function loadSheetData(){
     loadKHTTData()})}
 
 // ===== FETCH REAL KHTT DATA ====
+function getCurrentISOWeek(){
+  var now=new Date(),d=new Date(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate()));
+  var dayNum=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()+3-dayNum);
+  var jan4=new Date(Date.UTC(d.getUTCFullYear(),0,4));
+  var w=1+Math.round(((d.getTime()-jan4.getTime())/86400000-3+((jan4.getUTCDay()+6)%7))/7);
+  return d.getUTCFullYear()+'-W'+String(w).padStart(2,'0')}
+
 function loadKHTTData(week){
   var u=GAS_URL+'?action=getKHTT'+(week?'&week='+week:'');
   fetch(u).then(function(r){return r.json()}).then(function(res){
     if(res.status!=='ok'){buildDashboard();return}
-    allWeeks=res.weeks||[];currentWeek=res.currentWeek||'';
+    var rawWeeks=res.weeks||[];
     weekSubmitted={};
     (res.data||[]).forEach(function(r){weekSubmitted[r.sap]=true});
-    // Fill week selector
+    // Deduplicate + sort numerically (newest first)
+    var seen={};allWeeks=[];rawWeeks.forEach(function(w){if(!seen[w]){seen[w]=true;allWeeks.push(w)}});
+    allWeeks.sort(function(a,b){var pa=parseWeekKey(a),pb=parseWeekKey(b);if(!pa||!pb)return a.localeCompare(b);return pa.year!==pb.year?pa.year-pb.year:pa.week-pb.week});
+    allWeeks.reverse();
+    // Always add current ISO week (even if no data yet)
+    var realCurrent=getCurrentISOWeek();currentWeek=realCurrent;
+    if(allWeeks.indexOf(realCurrent)<0)allWeeks.unshift(realCurrent);
     weekLabels={};
-    // Sort numerically by year+week (fix GAS alphabetical sort)
-    allWeeks.sort(function(a,b){
-      var pa=parseWeekKey(a),pb=parseWeekKey(b);
-      if(!pa||!pb)return a.localeCompare(b);
-      return pa.year!==pb.year?pa.year-pb.year:pa.week-pb.week});
-    allWeeks.reverse(); // newest first
     allWeeks.forEach(function(w){weekLabels[w]=formatWeekLabel(w)});
-    // Set currentWeek to latest if not set
-    if(!currentWeek)currentWeek=allWeeks[0]||'';
     var sw=document.getElementById('selWeek'),selVal=sw.value||currentWeek;
     sw.innerHTML='<option value="">Tất cả</option>';
     allWeeks.forEach(function(w){sw.innerHTML+='<option value="'+w+'"'+(w===selVal?' selected':'')+'>'+weekLabels[w]+'</option>'});
