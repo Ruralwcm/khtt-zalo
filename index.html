@@ -211,8 +211,8 @@ function getCurrentISOWeek(){
   return d.getUTCFullYear()+'-W'+String(w).padStart(2,'0')}
 
 function loadKHTTData(week){
-  var u=GAS_URL+'?action=getKHTT'+(week?'&week='+week:'');
-  fetch(u).then(function(r){return r.json()}).then(function(res){
+  var u=GAS_URL+'?action=getKHTT&_='+Date.now()+(week?'&week='+week:'');
+  fetch(u,{cache:'no-cache'}).then(function(r){return r.json()}).then(function(res){
     if(res.status!=='ok'){buildDashboard();return}
     var rawWeeks=res.weeks||[];
     weekSubmitted={};
@@ -226,7 +226,8 @@ function loadKHTTData(week){
     if(allWeeks.indexOf(realCurrent)<0)allWeeks.unshift(realCurrent);
     weekLabels={};
     allWeeks.forEach(function(w){weekLabels[w]=formatWeekLabel(w)});
-    var sw=document.getElementById('selWeek'),selVal=sw.value||currentWeek;
+    var sw=document.getElementById('selWeek');
+    var selVal=week||sw.value||currentWeek; // prioritize passed week param
     sw.innerHTML='<option value="">Tất cả</option>';
     allWeeks.forEach(function(w){sw.innerHTML+='<option value="'+w+'"'+(w===selVal?' selected':'')+'>'+weekLabels[w]+'</option>'});
     sw.value=selVal||currentWeek;
