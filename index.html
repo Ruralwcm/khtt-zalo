@@ -158,7 +158,22 @@ checkAccess()})();
 var SHEET_ID='1UMtB9MOxGOaZvxN5VAUGAS1bPaAL2tVVFEViGANd4Tk',SHEET_NAME='Storeslist',GAS_URL='https://script.google.com/macros/s/AKfycbxeW2WtmPzr3GSWUK_NzOW4C3J5Q950Ji2fEswP1kH_HGitUCFJNnr2f00CR4HOFqT-/exec';
 var DATA={},MIEN_DATA={},GLOBAL_STORES={},remindMsg='',khttHistoryCache={};
 var weekSubmitted={}; // sap -> true for CURRENT WEEK submissions from GAS
-var allWeeks=[],currentWeek='';
+var allWeeks=[],currentWeek='',weekLabels={}; // wKey -> "W45 (03/11-09/11)"
+
+function parseWeekKey(wk){
+  // "2026-W45" -> {year, week}
+  var m=wk.match(/^(\d{4})-W(\d{1,2})$/);if(!m)return null;
+  return {year:parseInt(m[1]),week:parseInt(m[2])}}
+
+function formatWeekLabel(wk){
+  var p=parseWeekKey(wk);if(!p)return wk;
+  // Get Monday of ISO week
+  var jan4=new Date(p.year,0,4),jan4d=jan4.getDay()||7;
+  var monday=new Date(p.year,0,4+(p.week-1)*7-(jan4d-1));
+  var sunday=new Date(monday.getTime()+6*86400000);
+  var dd=function(d){return String(d.getDate()).padStart(2,'0')};
+  var mm=function(d){return String(d.getMonth()+1).padStart(2,'0')};
+  return 'W'+p.week+' ('+dd(monday)+'/'+mm(monday)+'-'+dd(sunday)+'/'+mm(sunday)+')'}
 
 function normKey(s){return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[đĐ]/g,function(c){return c==='đ'?'d':'D'}).toLowerCase().trim()}
 function parseCSV(text){var rows=[],cols=[],cur='',q=false;for(var i=0;i<text.length;i++){var c=text[i];if(c==='"')q=!q;else if(c===','&&!q){cols.push(cur.trim());cur=''}else if(c==='\n'&&!q){cols.push(cur.trim());cur='';if(cols.length>1||cols[0]!=='')rows.push(cols);cols=[]}else if(c==='\r'&&!q){}else cur+=c}cols.push(cur.trim());if(cols.length>1||cols[0]!=='')rows.push(cols);return rows}
@@ -195,9 +210,10 @@ function loadKHTTData(week){
     weekSubmitted={};
     (res.data||[]).forEach(function(r){weekSubmitted[r.sap]=true});
     // Fill week selector
+    weekLabels={};allWeeks.forEach(function(w){weekLabels[w]=formatWeekLabel(w)});
     var sw=document.getElementById('selWeek'),selVal=sw.value||currentWeek;
     sw.innerHTML='<option value="">Tất cả</option>';
-    allWeeks.forEach(function(w){sw.innerHTML+='<option value="'+w+'"'+(w===selVal?' selected':'')+'>'+w+'</option>'});
+    allWeeks.forEach(function(w){sw.innerHTML+='<option value="'+w+'"'+(w===selVal?' selected':'')+'>'+weekLabels[w]+'</option>'});
     sw.value=selVal||currentWeek;
     loadKHTTHistoryCache();
     buildDashboard()})}
@@ -305,7 +321,8 @@ function buildDashboard(){
   document.getElementById('dashGlobalBar').style.width=pct+'%';
   document.getElementById('dashGlobalText').textContent=done+'/'+all+' CH ('+pct+'%)';
   document.getElementById('dashUpdated').textContent='🔄 '+new Date().toLocaleTimeString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'});
-  document.getElementById('dashNote').textContent=(document.getElementById('selWeek').value||currentWeek)?'Chưa KS = chưa có KHTT tuần này':'Tất cả các tuần';
+  var wk=document.getElementById('selWeek').value||currentWeek;
+  document.getElementById('dashNote').textContent=wk?weekLabels[wk]||wk:'Tất cả các tuần';
   document.getElementById('cardQLKV').style.display='none';document.getElementById('cardCHList').style.display='none';
   // GĐV table with click drill-down
   var gl=Object.values(dashGdvMap).sort(function(a,b){return b.total-a.total}),gt='<table class="dash-table">';
