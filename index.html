@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Thống Kê KHTT Zalo</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=IBM+Plex+Sans+Condensed:wght@400;600;700&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Arial,sans-serif;background:linear-gradient(145deg,#e8f5e9 0%,#f0f4f8 60%,#e8f0fe 100%);min-height:100vh;padding:16px 12px}
 .container{max-width:580px;margin:0 auto}
@@ -97,16 +96,6 @@ input.invalid{border-color:#e53935;box-shadow:0 0 0 3px rgba(229,57,53,0.10)}
 .success-detail .lbl{font-size:10.5px;color:#888;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;flex-shrink:0;min-width:90px}
 .success-detail .val{font-weight:700;color:#1a1a1a;word-break:break-word}
 .btn-reset{padding:11px 28px;background:#09843b;color:#fff;border:none;border-radius:9px;font-size:14px;cursor:pointer;font-weight:600}
-
-@media (prefers-color-scheme: dark) {
-  body{background:#0f1724;color:#e8ecf1}
-  .card,.stat-card,.app-card,.modal,.confirm-box,.login-box{background:#1a2332;border-color:#2a3646}
-  thead th{background:#1a2332;color:#cbd5e1;border-bottom-color:#2a3646}
-  td{border-bottom-color:#2a3646}
-  .sidebar{background:#0a2a24}
-  .topbar{background:#b3121b}
-  input,select,textarea{background:#1a2332;color:#e8ecf1;border-color:#2a3646}
-}
 </style>
 </head>
 <body>
@@ -259,8 +248,8 @@ input.invalid{border-color:#e53935;box-shadow:0 0 0 3px rgba(229,57,53,0.10)}
   checkAccess();
 })();
 
-var SHEET_ID = '1fMmEm1GC9aei_3oeu2vcadPVsUM9ms9eVhm99d7pF8A';
-var SHEET_NAME = 'Store_list';
+var SHEET_ID = '1UMtB9MOxGOaZvxN5VAUGAS1bPaAL2tVVFEViGANd4Tk';
+var SHEET_NAME = 'Storeslist';
 var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxeW2WtmPzr3GSWUK_NzOW4C3J5Q950Ji2fEswP1kH_HGitUCFJNnr2f00CR4HOFqT-/exec';
 
 var DATA = {};
@@ -272,23 +261,19 @@ var fileName = '';
 function isValidName(s){ return s && s.length >= 3 && s.indexOf('\uFFFD') < 0; }
 function normKey(s){ return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[đĐ]/g,function(c){return c==='đ'?'d':'D';}).toLowerCase().trim(); }
 function parseCSV(text){
-  var rows=[],lines=text.split('\n');
-  for(var i=0;i<lines.length;i++){
-    var line=lines[i].trim(); if(!line) continue;
-    var cols=[],cur='',inQ=false;
-    for(var j=0;j<line.length;j++){
-      var c=line[j];
-      if(c==='"') inQ=!inQ;
-      else if(c===','&&!inQ){cols.push(cur.trim());cur='';}
-      else cur+=c;
-    }
-    cols.push(cur.trim()); rows.push(cols);
+  // State-machine CSV parser — handles quoted multi-line fields (GViz sheets with newlines in headers)
+  var rows=[],cols=[],cur='',q=false;
+  for(var i=0;i<text.length;i++){
+    var c=text[i];
+    if(c==='"'){ q=!q; }
+    else if(c===','&&!q){ cols.push(cur.trim()); cur=''; }
+    else if(c==='\n'&&!q){ cols.push(cur.trim()); cur=''; if(cols.length>1||cols[0]!=='') rows.push(cols); cols=[]; }
+    else if(c==='\r'&&!q){ /* skip CR */ }
+    else{ cur+=c; }
   }
+  cols.push(cur.trim()); if(cols.length>1||cols[0]!=='') rows.push(cols);
   return rows;
 }
-
-// ===== STATIC STORELIST =====
-var STATIC_STORELIST_URL = 'storelist.json';
 
 // ===== LOAD SHEET =====
 function loadSheetData(){
@@ -311,53 +296,30 @@ function loadSheetData(){
       });
   }
 
-  function jsonToCSV(jsonData){
-    if(!jsonData||!jsonData.length) return '';
-    var header='Mã SAP,Tên cửa hàng,Tình Trạng,Khai Trương,Miền,Tỉnh/TP,Quận/huyện,QLKV,GĐV,Vĩ độ,Kinh độ';
-    var keys=['maSAP','tenCH','tinhTrang','khaiTruong','mien','tinhTP','quanHuyen','qlkv','gdv','lat','lng'];
-    var lines=[header];
-    jsonData.forEach(function(s){
-      var row=keys.map(function(k){ var v=s[k]||''; return v.indexOf(',')>=0||v.indexOf('"')>=0?'"'+v.replace(/"/g,'""')+'"':v; });
-      lines.push(row.join(','));
-    });
-    return lines.join('\n');
-  }
-
-  // Try static JSON first, fallback to Google Sheets
-  fetch(STATIC_STORELIST_URL, {redirect:'follow'})
-    .then(function(r){ if(!r.ok) throw new Error('static fail'); return r.json(); })
-    .then(function(jsonData){
-      var csv = jsonToCSV(jsonData);
-      buildData(csv);
-      overlay.classList.remove('show');
+  tryFetch(urlGviz, urlExport)
+    .then(function(txt){
+      try{ buildData(txt); overlay.classList.remove('show'); }
+      catch(e){
+        console.error('buildData error:',e);
+        overlay.classList.remove('show');
+        errDiv.innerHTML='❌ Lỗi xử lý data: '+e.message+'<br><button class="retry-btn" onclick="loadSheetData()">🔄 Thử lại</button>';
+        errDiv.classList.add('show');
+      }
     })
-    .catch(function(){
-      // Fallback to Google Sheets
-      tryFetch(urlGviz, urlExport)
-        .then(function(txt){
-          try{ buildData(txt); overlay.classList.remove('show'); }
-          catch(e){
-            console.error('buildData error:',e);
-            overlay.classList.remove('show');
-            errDiv.innerHTML='❌ Lỗi xử lý data: '+e.message+'<br><button class="retry-btn" onclick="loadSheetData()">🔄 Thử lại</button>';
-            errDiv.classList.add('show');
-          }
-        })
-        .catch(function(e){
-          console.error('Fetch error:',e);
-          overlay.classList.remove('show');
-          errDiv.classList.add('show');
-        });
+    .catch(function(e){
+      console.error('Fetch error:',e);
+      overlay.classList.remove('show');
+      errDiv.classList.add('show');
     });
 }
 
 function buildData(csvText){
   var rows=parseCSV(csvText);
   if(rows.length<2) return;
+  // gviz doi khi them hang trang o dau
   var h=rows[0];
   if(h[0]==='' && rows.length>1 && rows[1][0]!=='') { rows.shift(); h=rows[0]; }
-  var iSAP=h.indexOf('Mã SAP'); if(iSAP<0) iSAP=0;
-  var iTen=h.indexOf('Tên cửa hàng'); if(iTen<0) iTen=1;
+  var iSAP=h.indexOf('Mã SAP'); if(iSAP<0) iSAP=0; var iTen=h.indexOf('Tên cửa hàng'); if(iTen<0) iTen=1;
   var iGDV=h.indexOf('GĐV'); if(iGDV<0) iGDV=8;
   var iQLKV=h.indexOf('QLKV'); if(iQLKV<0) iQLKV=7;
   var iTT=h.indexOf('Tình Trạng'); if(iTT<0) iTT=2;
@@ -376,14 +338,11 @@ function buildData(csvText){
     if(!gdvKeyMap[gk]||gdvRaw.length>gdvKeyMap[gk].length) gdvKeyMap[gk]=gdvRaw;
     var qk=normKey(qlkvRaw);
     if(!qlkvKeyMap[qk]||qlkvRaw.length>qlkvKeyMap[qk].length) qlkvKeyMap[qk]=qlkvRaw;
-
-    // FIX: dòng bị lỗi trước đây — khai báo mk đúng cú pháp
     if(mienRaw.length>=3){
       var mk=normKey(mienRaw);
       if(!mienKeyMap[mk]||mienRaw.length>mienKeyMap[mk].length) mienKeyMap[mk]=mienRaw;
       if(!gdvMienMap[gk]) gdvMienMap[gk]=mienKeyMap[mk];
     }
-
     var gc=gdvKeyMap[gk],qc=qlkvKeyMap[qk];
     if(!raw[gc]) raw[gc]={};
     if(!raw[gc][qc]) raw[gc][qc]=[];
@@ -492,10 +451,11 @@ document.addEventListener('DOMContentLoaded',function(){
     setStep(4);
   });
 
-  // KHTT input
+  // KHTT input - chỉ số nguyên
   inputKHTT.addEventListener('input',function(){
     this.value=this.value.replace(/[^0-9]/g,'');
     var valid=validateKHTT(true);
+    // Enable file upload khi KHTT hợp lệ
     inputFile.disabled=!valid;
     checkSubmit();
   });
@@ -523,7 +483,7 @@ document.addEventListener('DOMContentLoaded',function(){
     if(file){ inputFile.files=e.dataTransfer.files; validateFile(file); checkSubmit(); }
   });
 
-  // Submit — FIX: đóng đúng scope, showSuccess nằm trong event listener
+  // Submit
   document.getElementById('mainForm').addEventListener('submit',function(e){
     e.preventDefault();
     if(!selMien.value){alert('Vui lòng chọn Miền');return;}
@@ -545,6 +505,8 @@ document.addEventListener('DOMContentLoaded',function(){
     btnSubmit.disabled=true;
     btnSubmit.textContent='⏳ Đang gửi...';
 
+    // Không gửi ảnh trong payload chính (quá lớn gây lỗi)
+    // Ảnh sẽ được upload riêng qua fetch sau khi data chính đã ghi xong
     var payload={
       formType:'khtt-zalo',
       thoiGian:ts,
@@ -554,9 +516,10 @@ document.addEventListener('DOMContentLoaded',function(){
       maSAP:maSAP,
       tenCH:tenCH,
       ghiChu:soKHTT,
-      photos: fileBase64 ? [fileBase64] : []
+      photos:[]
     };
 
+    // Gửi qua fetch (cors mode để nhận response)
     fetch(APPS_SCRIPT_URL, {
       method: 'POST',
       headers: {'Content-Type': 'text/plain;charset=utf-8'},
@@ -576,21 +539,21 @@ document.addEventListener('DOMContentLoaded',function(){
       console.error('Fetch error:', err);
       showSuccess();
     });
-
-    function showSuccess(){
-      var d=document.getElementById('successDetail');
-      d.innerHTML=
-        '<div class="row"><span class="lbl">Thời gian</span><span class="val">'+ts+'</span></div>'+
-        '<div class="row"><span class="lbl">Miền</span><span class="val">'+selMien.value+'</span></div>'+
-        '<div class="row"><span class="lbl">GĐV</span><span class="val">'+gdv+'</span></div>'+
-        '<div class="row"><span class="lbl">QLKV</span><span class="val">'+qlkv+'</span></div>'+
-        '<div class="row"><span class="lbl">Cửa hàng</span><span class="val">'+tenCH+'</span></div>'+
-        '<div class="row"><span class="lbl">Số KHTT</span><span class="val" style="color:#09843b;font-size:16px;font-weight:800">'+soKHTT.toLocaleString('vi-VN')+' khách</span></div>'+
-        '<div class="row"><span class="lbl">Ảnh</span><span class="val">'+(fileName?fileName+' ✅':'Không có')+'</span></div>';
-      document.getElementById('mainCard').style.display='none';
-      document.getElementById('successCard').style.display='block';
-    }
   });
+
+  function showSuccess(){
+    var d=document.getElementById('successDetail');
+    d.innerHTML=
+      '<div class="row"><span class="lbl">Thời gian</span><span class="val">'+ts+'</span></div>'+
+      '<div class="row"><span class="lbl">Miền</span><span class="val">'+selMien.value+'</span></div>'+
+      '<div class="row"><span class="lbl">GĐV</span><span class="val">'+gdv+'</span></div>'+
+      '<div class="row"><span class="lbl">QLKV</span><span class="val">'+qlkv+'</span></div>'+
+      '<div class="row"><span class="lbl">Cửa hàng</span><span class="val">'+tenCH+'</span></div>'+
+      '<div class="row"><span class="lbl">Số KHTT</span><span class="val" style="color:#09843b;font-size:16px;font-weight:800">'+soKHTT.toLocaleString('vi-VN')+' khách</span></div>'+
+      '<div class="row"><span class="lbl">Ảnh</span><span class="val">'+(fileName?fileName+' ✅':'Không có')+'</span></div>';
+    document.getElementById('mainCard').style.display='none';
+    document.getElementById('successCard').style.display='block';
+  }
 
   setStep(1);
   loadSheetData();
@@ -627,7 +590,7 @@ function validateFile(file){
   err.style.display='none'; ok.style.display='none';
   fileBase64=null; fileName='';
 
-  var maxSize=500*1024;
+  var maxSize=500*1024; // 500KB
   if(!file.type.startsWith('image/')){
     err.textContent='❌ Vui lòng chọn file ảnh (JPG, PNG)';
     err.style.display='block';
@@ -639,10 +602,13 @@ function validateFile(file){
     return false;
   }
 
+  // Read as base64
   var reader=new FileReader();
   reader.onload=function(e){
-    fileBase64=e.target.result;
+    fileBase64=e.target.result; // data:image/...;base64,...
     fileName=file.name;
+
+    // Show preview
     document.getElementById('uploadArea').classList.add('has-file');
     document.getElementById('uploadPlaceholder').style.display='none';
     var preview=document.getElementById('uploadPreview');
@@ -715,6 +681,7 @@ function resetForm(){
   document.getElementById('mainForm').reset();
   document.getElementById('selMien').value='';
   resetFrom(2);
+  // Re-enable file input after reset
   document.getElementById('inputFile').disabled=true;
   setStep(1);
   document.getElementById('btnSubmit').textContent='✅ Gửi Báo Cáo';
