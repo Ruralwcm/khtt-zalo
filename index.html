@@ -187,7 +187,7 @@ function loadSheetData(){
     var iS=h.indexOf('Mã SAP'),iT=h.indexOf('Tên cửa hàng'),iG=h.indexOf('GĐV'),iQ=h.indexOf('QLKV'),iTT=h.indexOf('Tình Trạng'),iM=h.indexOf('Miền'),iTi=h.indexOf('Tỉnh/TP');
     if(iT<0)iT=4;if(iG<0)iG=35;if(iQ<0)iQ=31;if(iTT<0)iTT=5;if(iM<0)iM=7;if(iTi<0)iTi=8;
     var gM={},qM={},me={};
-    rows.slice(1).forEach(function(r){var sap=(r[iS]||'').trim(),ten=(r[iT]||'').trim(),tt=(r[iTT]||'').trim(),gdv=(r[iG]||'').trim(),qlkv=(r[iQ]||'').trim(),mien=(r[iM]||'').trim(),tinh=(r[iTi]||'').trim();if(!sap||ten.length<3)return;if(tt!=='Đang hoạt động')return;
+    rows.slice(1).forEach(function(r){var sap=(r[iS]||'').trim(),ten=(r[iT]||'').trim(),tt=(r[iTT]||'').trim(),gdv=(r[iG]||'').trim(),qlkv=(r[iQ]||'').trim(),mien=(r[iM]||'').trim(),tinh=(r[iTi]||'').trim();if(!sap||ten.length<3)return;
       GLOBAL_STORES[sap]={ten:ten,gdv:gdv,qlkv:qlkv,mien:mien,tinh:tinh};
       var gk=normKey(gdv);if(!gM[gk]||gdv.length>gM[gk].length)gM[gk]=gdv;
       var qk=normKey(qlkv);if(!qM[qk]||qlkv.length>qM[qk].length)qM[qk]=qlkv;
