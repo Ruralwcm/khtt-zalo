@@ -198,6 +198,24 @@ input.invalid{border-color:#e53935;box-shadow:0 0 0 3px rgba(229,57,53,0.10)}
   <div class="success-title">Đã gửi thành công!</div>
   <div class="success-sub">Dữ liệu đã được ghi nhận vào sheet KHTT Zalo.</div>
   <div class="success-detail" id="successDetail"></div>
+  
+  <!-- 🔔 Cùng nhắc đồng đội -->
+  <div style="margin-top:16px;background:#fffbe6;border:1px solid #ffe082;border-radius:12px;padding:16px;text-align:left" id="remindSection">
+    <div style="font-size:13px;font-weight:700;color:#e65100;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+      <span>📢</span> Cùng nhắc đồng đội — <span id="remindGDV" style="color:#bf360c"></span>
+    </div>
+    <div id="remindTeam" style="font-size:12px;color:#555;line-height:1.8;margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="copyRemindMsg()" id="btnCopyRemind" style="flex:1;min-width:140px;padding:10px 14px;background:linear-gradient(135deg,#09843b,#066b30);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s">
+        📋 Copy tin nhắn nhắc
+      </button>
+      <button onclick="shareRemindZalo()" id="btnShareZalo" style="flex:1;min-width:140px;padding:10px 14px;background:linear-gradient(135deg,#0068ff,#0052cc);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s">
+        💬 Chia sẻ qua Zalo
+      </button>
+    </div>
+    <div id="copyToast" style="display:none;margin-top:8px;font-size:12px;color:#09843b;font-weight:600;text-align:center">✅ Đã copy! Gửi vào nhóm Zalo/Telegram nhé.</div>
+  </div>
+
   <button class="btn-reset" onclick="resetForm()">➕ Gửi báo cáo khác</button>
 </div>
 
@@ -553,6 +571,103 @@ document.addEventListener('DOMContentLoaded',function(){
       '<div class="row"><span class="lbl">Ảnh</span><span class="val">'+(fileName?fileName+' ✅':'Không có')+'</span></div>';
     document.getElementById('mainCard').style.display='none';
     document.getElementById('successCard').style.display='block';
+    
+    // Build remind team section
+    buildRemindTeam(gdv, qlkv);
+  }
+
+  // ===== CÙNG NHẮC ĐỒNG ĐỘI =====
+  var remindMsg = '';
+  
+  function buildRemindTeam(gdvName, myQlkv){
+    var qlkvs = DATA[gdvName] || {};
+    var qlkvList = Object.keys(qlkvs).sort(function(a,b){return a.localeCompare(b,'vi');});
+    var teamHTML = '';
+    var totalTeamCH = 0;
+    var remindLines = [];
+    
+    qlkvList.forEach(function(q){
+      var storeCount = qlkvs[q].length;
+      totalTeamCH += storeCount;
+      var isMe = (q === myQlkv);
+      var icon = isMe ? '✅' : '⬜';
+      var style = isMe ? 'color:#09843b;font-weight:700' : '';
+      teamHTML += '<div style="display:flex;justify-content:space-between;padding:2px 0;'+style+'">'+
+        '<span>'+icon+' '+q+'</span>'+
+        '<span>'+storeCount+' CH</span></div>';
+      if(!isMe){
+        remindLines.push('• '+q+' ('+storeCount+' CH)');
+      }
+    });
+    
+    document.getElementById('remindGDV').textContent = gdvName + ' · ' + qlkvList.length + ' QLKV · ' + totalTeamCH + ' CH';
+    document.getElementById('remindTeam').innerHTML = teamHTML;
+    
+    // Build reminder message
+    var now = new Date().toLocaleString('vi-VN', {timeZone: 'Asia/Ho_Chi_Minh'});
+    remindMsg = '📢 *Cùng nhắc đồng đội — KHTT Zalo* 📢\n\n'+
+      '👤 '+gdvName+' — Tôi ('+myQlkv+') vừa báo cáo xong! ✅\n\n'+
+      '👥 Cả đội còn '+(qlkvList.length-1)+' QLKV, tổng '+totalTeamCH+' CH:\n'+
+      remindLines.join('\n')+'\n\n'+
+      '📲 Vào form ngay: https://ruralwcm.github.io/khtt-zalo/\n'+
+      '⏰ Hạn chót: Chủ Nhật 23:00\n'+
+      '💪 Cả nhà cùng làm cho kịp deadline nhé!';
+  }
+  
+  function copyRemindMsg(){
+    if(!remindMsg){
+      alert('Chưa có dữ liệu nhắc. Vui lòng thử lại.');
+      return;
+    }
+    // Copy plain text (strip markdown)
+    var plain = remindMsg.replace(/\*/g, '');
+    if(navigator.clipboard){
+      navigator.clipboard.writeText(plain).then(function(){
+        var toast = document.getElementById('copyToast');
+        toast.style.display = 'block';
+        setTimeout(function(){ toast.style.display = 'none'; }, 3000);
+      }).catch(function(){
+        fallbackCopy(plain);
+      });
+    } else {
+      fallbackCopy(plain);
+    }
+  }
+  
+  function fallbackCopy(text){
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy');
+      var toast = document.getElementById('copyToast');
+      toast.style.display = 'block';
+      setTimeout(function(){ toast.style.display = 'none'; }, 3000);
+    }catch(e){ alert('Không thể copy tự động. Vui lòng copy thủ công.'); }
+    document.body.removeChild(ta);
+  }
+  
+  function shareRemindZalo(){
+    if(!remindMsg){
+      alert('Chưa có dữ liệu nhắc. Vui lòng thử lại.');
+      return;
+    }
+    var plain = remindMsg.replace(/\*/g, '');
+    var encoded = encodeURIComponent(plain);
+    // Open Zalo share (mobile)
+    var isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+    if(isMobile){
+      window.open('https://zalo.me/share?text='+encoded, '_blank');
+    } else {
+      // Desktop: copy + hint
+      if(navigator.clipboard){
+        navigator.clipboard.writeText(plain).then(function(){
+          alert('📋 Đã copy tin nhắn! Mở Zalo trên máy và dán vào nhóm nhé.');
+        });
+      } else {
+        fallbackCopy(plain);
+        alert('📋 Đã copy tin nhắn! Mở Zalo trên máy và dán vào nhóm nhé.');
+      }
+    }
   }
 
   setStep(1);
