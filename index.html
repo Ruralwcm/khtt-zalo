@@ -167,13 +167,14 @@ function parseWeekKey(wk){
 
 function formatWeekLabel(wk){
   var p=parseWeekKey(wk);if(!p)return wk;
-  // Get Monday of ISO week
-  var jan4=new Date(p.year,0,4),jan4d=jan4.getDay()||7;
-  var monday=new Date(p.year,0,4+(p.week-1)*7-(jan4d-1));
-  var sunday=new Date(monday.getTime()+6*86400000);
-  var dd=function(d){return String(d.getDate()).padStart(2,'0')};
-  var mm=function(d){return String(d.getMonth()+1).padStart(2,'0')};
-  return 'W'+p.week+' ('+dd(monday)+'/'+mm(monday)+'-'+dd(sunday)+'/'+mm(sunday)+')'}
+  // Monday of ISO week: Jan 4 → back to Monday → forward to target week
+  var d=new Date(Date.UTC(p.year,0,4)); // Jan 4
+  var dow=(d.getUTCDay()+6)%7; // Mon=0..Sun=6
+  d.setUTCDate(d.getUTCDate()-dow+(p.week-1)*7); // Monday
+  var mon=d;var sun=new Date(mon.getTime()+6*86400000);
+  var dd=function(x){return String(x.getUTCDate()).padStart(2,'0')};
+  var mm=function(x){return String(x.getUTCMonth()+1).padStart(2,'0')};
+  return 'W'+p.week+' ('+dd(mon)+'/'+mm(mon)+'-'+dd(sun)+'/'+mm(sun)+')'}
 
 function normKey(s){return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[đĐ]/g,function(c){return c==='đ'?'d':'D'}).toLowerCase().trim()}
 function parseCSV(text){var rows=[],cols=[],cur='',q=false;for(var i=0;i<text.length;i++){var c=text[i];if(c==='"')q=!q;else if(c===','&&!q){cols.push(cur.trim());cur=''}else if(c==='\n'&&!q){cols.push(cur.trim());cur='';if(cols.length>1||cols[0]!=='')rows.push(cols);cols=[]}else if(c==='\r'&&!q){}else cur+=c}cols.push(cur.trim());if(cols.length>1||cols[0]!=='')rows.push(cols);return rows}
@@ -210,7 +211,16 @@ function loadKHTTData(week){
     weekSubmitted={};
     (res.data||[]).forEach(function(r){weekSubmitted[r.sap]=true});
     // Fill week selector
-    weekLabels={};allWeeks.forEach(function(w){weekLabels[w]=formatWeekLabel(w)});
+    weekLabels={};
+    // Sort numerically by year+week (fix GAS alphabetical sort)
+    allWeeks.sort(function(a,b){
+      var pa=parseWeekKey(a),pb=parseWeekKey(b);
+      if(!pa||!pb)return a.localeCompare(b);
+      return pa.year!==pb.year?pa.year-pb.year:pa.week-pb.week});
+    allWeeks.reverse(); // newest first
+    allWeeks.forEach(function(w){weekLabels[w]=formatWeekLabel(w)});
+    // Set currentWeek to latest if not set
+    if(!currentWeek)currentWeek=allWeeks[0]||'';
     var sw=document.getElementById('selWeek'),selVal=sw.value||currentWeek;
     sw.innerHTML='<option value="">Tất cả</option>';
     allWeeks.forEach(function(w){sw.innerHTML+='<option value="'+w+'"'+(w===selVal?' selected':'')+'>'+weekLabels[w]+'</option>'});
