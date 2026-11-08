@@ -131,7 +131,17 @@
       <div style="font-size:11px;color:var(--mut);margin-top:4px;text-align:center" id="dashGlobalText"></div>
     </div>
     <div class="card"><div class="dash-section"><h3>Theo Vùng (GĐV)</h3><div id="dashGDVTable"></div></div></div>
-    <div class="card"><div class="dash-section"><h3>Theo QLKV</h3><div id="dashQLKVTable"></div></div></div>
+    <div class="card" id="cardQLKV" style="display:none"><div class="dash-section"><h3>QLKV — <span id="qlkvGdvName"></span></h3><div id="dashQLKVSub"></div></div></div>
+    <div class="card" id="cardCHList" style="display:none"><div class="dash-section">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0">CH chưa khảo sát — <span id="chListTitle"></span></h3>
+        <button onclick="exportCSV()" style="padding:6px 12px;background:var(--green);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">📥 Export CSV</button>
+      </div>
+      <div id="chListDetail" style="font-size:11.5px;line-height:1.8;max-height:400px;overflow-y:auto;margin-top:6px"></div>
+    </div></div>
+    <div style="margin-top:8px;text-align:center">
+      <button onclick="exportAllCSV()" style="padding:8px 16px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📥 Export toàn bộ CH chưa khảo sát (CSV)</button>
+    </div>
     <div style="font-size:10px;color:var(--mut);text-align:center;margin-top:6px" id="dashNote"></div>
   </div>
 
@@ -275,11 +285,18 @@ function resetForm(){
   document.getElementById('vLine1').textContent='';document.getElementById('vLine2').textContent=''}
 
 // ===== DASHBOARD =====
+var dashGdvMap={},dashQlkvMap={},dashStores={}; // cache for drill-down
+
 function buildDashboard(){
-  var all=0,done=0,gdvMap={},qlkvMap={};
+  var all=0,done=0;dashGdvMap={};dashQlkvMap={};dashStores={};
   Object.keys(GLOBAL_STORES).forEach(function(sap){var s=GLOBAL_STORES[sap];all++;if(weekSubmitted[sap])done++;
-    var gk=normKey(s.gdv),qk=normKey(s.qlkv);if(!gdvMap[gk])gdvMap[gk]={name:s.gdv,total:0,done:0};if(!qlkvMap[qk])qlkvMap[qk]={name:s.qlkv,gdv:s.gdv,total:0,done:0};
-    gdvMap[gk].total++;qlkvMap[qk].total++;if(weekSubmitted[sap]){gdvMap[gk].done++;qlkvMap[qk].done++}});
+    var gk=normKey(s.gdv),qk=normKey(s.qlkv);
+    if(!dashGdvMap[gk])dashGdvMap[gk]={name:s.gdv,total:0,done:0,qlkvs:{}};
+    if(!dashQlkvMap[qk])dashQlkvMap[qk]={name:s.qlkv,gdv:s.gdv,gdvKey:gk,total:0,done:0,stores:[]};
+    dashGdvMap[gk].total++;dashQlkvMap[qk].total++;dashStores[sap]=s;
+    if(!dashGdvMap[gk].qlkvs[qk])dashGdvMap[gk].qlkvs[qk]=dashQlkvMap[qk];
+    if(weekSubmitted[sap]){dashGdvMap[gk].done++;dashQlkvMap[qk].done++}
+    else{dashQlkvMap[qk].stores.push({sap:sap,ten:s.ten,tinh:s.tinh})}});
   var pct=all?Math.round(done/all*100):0;
   document.getElementById('dashKPIs').innerHTML=
     '<div class="dash-kpi"><div class="num">'+all+'</div><div class="lbl">Tổng CH</div></div>'+
@@ -287,16 +304,57 @@ function buildDashboard(){
     '<div class="dash-kpi"><div class="num '+(pct>=80?'green':'red')+'">'+pct+'%</div><div class="lbl">Hoàn thành</div></div>';
   document.getElementById('dashGlobalBar').style.width=pct+'%';
   document.getElementById('dashGlobalText').textContent=done+'/'+all+' CH ('+pct+'%)';
-  document.getElementById('dashUpdated').textContent='🔄 Cập nhật: '+new Date().toLocaleTimeString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'});
-  var wk=document.getElementById('selWeek').value||currentWeek;
-  document.getElementById('dashNote').textContent=wk?'Dữ liệu tuần '+wk+' · Chưa khảo sát = chưa có KHTT trong tuần':'Dữ liệu tất cả các tuần';
-  // GĐV
-  var gl=Object.values(gdvMap).sort(function(a,b){return b.total-a.total}),gt='<table class="dash-table">';
-  gl.forEach(function(g){var p=g.total?Math.round(g.done/g.total*100):0;gt+='<tr><td class="qname">'+g.name+'</td><td style="font-size:11px;color:var(--mut)">'+g.done+'/'+g.total+'</td><td class="bar-cell"><div class="mini-bar"><div class="fill" style="width:'+p+'%"></div></div></td><td class="pct" style="color:'+(p>=80?'var(--green)':p>=50?'#e65100':'var(--red)')+'">'+p+'%</td></tr>'});
-  gt+='</table>';document.getElementById('dashGDVTable').innerHTML=gt||'— ';
-  // QLKV top 30
-  var ql=Object.values(qlkvMap).sort(function(a,b){return b.total-a.total}).slice(0,30),qt='<table class="dash-table">';
-  ql.forEach(function(q){var p=q.total?Math.round(q.done/q.total*100):0;qt+='<tr><td class="qname">'+q.name+'</td><td style="font-size:10px;color:var(--mut)">'+(q.gdv||'').substring(0,16)+'</td><td style="font-size:11px;color:var(--mut)">'+q.done+'/'+q.total+'</td><td class="bar-cell"><div class="mini-bar"><div class="fill" style="width:'+p+'%"></div></div></td><td class="pct" style="color:'+(p>=80?'var(--green)':p>=50?'#e65100':'var(--red)')+'">'+p+'%</td></tr>'});
-  qt+='</table>';document.getElementById('dashQLKVTable').innerHTML=qt||'—'}</script>
+  document.getElementById('dashUpdated').textContent='🔄 '+new Date().toLocaleTimeString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'});
+  document.getElementById('dashNote').textContent=(document.getElementById('selWeek').value||currentWeek)?'Chưa KS = chưa có KHTT tuần này':'Tất cả các tuần';
+  document.getElementById('cardQLKV').style.display='none';document.getElementById('cardCHList').style.display='none';
+  // GĐV table with click drill-down
+  var gl=Object.values(dashGdvMap).sort(function(a,b){return b.total-a.total}),gt='<table class="dash-table">';
+  gl.forEach(function(g){var p=g.total?Math.round(g.done/g.total*100):0;
+    gt+='<tr style="cursor:pointer" onclick="showQLKVList(\''+g.name.replace(/'/g,"\\'")+'\')"><td class="qname">▶ '+g.name+'</td><td style="font-size:11px;color:var(--mut)">'+g.done+'/'+g.total+'</td><td class="bar-cell"><div class="mini-bar"><div class="fill" style="width:'+p+'%"></div></div></td><td class="pct" style="color:'+(p>=80?'var(--green)':p>=50?'#e65100':'var(--red)')+'">'+p+'%</td></tr>'});
+  gt+='</table>';document.getElementById('dashGDVTable').innerHTML=gt||'—'}
+
+// ===== DRILL-DOWN =====
+function showQLKVList(gdvName){
+  var gk=normKey(gdvName),g=dashGdvMap[gk];if(!g)return;
+  document.getElementById('cardCHList').style.display='none';
+  var ql=Object.values(g.qlkvs).sort(function(a,b){return b.total-a.total}),qt='<table class="dash-table">';
+  ql.forEach(function(q){var p=q.total?Math.round(q.done/q.total*100):0;
+    qt+='<tr style="cursor:pointer" onclick="showCHList(\''+q.name.replace(/'/g,"\\'")+'\')"><td class="qname">▶ '+q.name+'</td><td style="font-size:11px;color:var(--mut)">'+q.done+'/'+q.total+'</td><td class="bar-cell"><div class="mini-bar"><div class="fill" style="width:'+p+'%"></div></div></td><td class="pct" style="color:'+(p>=80?'var(--green)':p>=50?'#e65100':'var(--red)')+'">'+p+'%</td></tr>'});
+  qt+='</table>';
+  document.getElementById('qlkvGdvName').textContent=gdvName;
+  document.getElementById('dashQLKVSub').innerHTML=qt||'—';
+  document.getElementById('cardQLKV').style.display='block'}
+
+function showCHList(qlkvName){
+  var qk=normKey(qlkvName),q=dashQlkvMap[qk];if(!q)return;
+  document.getElementById('chListTitle').textContent=qlkvName+' ('+q.done+'/'+q.total+')';
+  var stores=q.stores||[];
+  if(!stores.length){document.getElementById('chListDetail').innerHTML='<div style="color:var(--green);font-weight:600">🎉 Tất cả CH đã báo cáo!</div>'}
+  else{var html='<div style="font-weight:700;color:#c62828;margin-bottom:4px">⬜ '+stores.length+' CH chưa khảo sát:</div>';
+    stores.forEach(function(s){html+='<div style="padding:2px 0;border-bottom:1px solid #f5f5f5">⬜ <b>'+s.sap+'</b> — '+s.ten+' <span style="color:var(--mut);font-size:10px">('+(s.tinh||'')+')</span></div>'});
+    document.getElementById('chListDetail').innerHTML=html}
+  document.getElementById('cardCHList').style.display='block';
+  // Scroll to CH list
+  document.getElementById('cardCHList').scrollIntoView({behavior:'smooth'})}
+
+// ===== EXPORT =====
+function getAllUndoneCH(){
+  var result=[];Object.keys(dashQlkvMap).forEach(function(qk){var q=dashQlkvMap[qk];(q.stores||[]).forEach(function(s){result.push({sap:s.sap,ten:s.ten,tinh:s.tinh||'',qlkv:q.name,gdv:q.gdv||''})})});
+  return result.sort(function(a,b){return a.gdv.localeCompare(b.gdv,'vi')||a.qlkv.localeCompare(b.qlkv,'vi')||a.sap.localeCompare(b.sap)})}
+
+function exportCSV(){
+  var qn=document.getElementById('chListTitle').textContent.split(' (')[0],stores=[];var q=dashQlkvMap[normKey(qn)];if(q)stores=q.stores||[];
+  if(!stores.length){alert('Không có CH chưa KS để export');return}
+  downloadCSV(stores.map(function(s){return{maSAP:s.sap,tenCH:s.ten,tinh:s.tinh||''}}),'khtt_chuaKS_'+qn.replace(/[^a-zA-Z0-9]/g,'_')+'.csv')}
+
+function exportAllCSV(){
+  var all=getAllUndoneCH();if(!all.length){alert('Tất cả CH đã báo cáo! 🎉');return}
+  downloadCSV(all.map(function(s){return{maSAP:s.sap,tenCH:s.ten,tinh:s.tinh,qlkv:s.qlkv,gdv:s.gdv}}),'khtt_chuaKS_toanbo_'+new Date().toISOString().slice(0,10)+'.csv')}
+
+function downloadCSV(data,filename){
+  if(!data.length)return;var keys=Object.keys(data[0]),csv='\uFEFF'+keys.join(',')+'\n';
+  data.forEach(function(r){csv+=keys.map(function(k){var v=String(r[k]||'');return v.indexOf(',')>=0||v.indexOf('"')>=0?'"'+v.replace(/"/g,'""')+'"':v}).join(',')+'\n'});
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a)}
+</script>
 </body>
 </html>
