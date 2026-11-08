@@ -202,7 +202,7 @@ input.invalid{border-color:#e53935;box-shadow:0 0 0 3px rgba(229,57,53,0.10)}
   <!-- 🔔 Cùng nhắc đồng đội — CH chưa báo cáo -->
   <div style="margin-top:16px;background:#fff3e0;border:1px solid #ffcc80;border-radius:12px;padding:16px;text-align:left" id="remindSection">
     <div style="font-size:13px;font-weight:700;color:#e65100;margin-bottom:8px;display:flex;align-items:center;gap:6px">
-      <span>🤝</span> Cùng nhắc đồng đội — còn <span id="remindCount" style="color:#bf360c;font-size:15px"></span> CH chưa báo cáo
+      <span>🤝</span> Cùng nhắc đồng đội — <span id="remindQLKV" style="color:#bf360c;font-weight:700"></span> · còn <span id="remindCount" style="color:#bf360c;font-size:15px"></span> CH
     </div>
     <div id="remindDetail" style="font-size:11.5px;color:#666;line-height:1.6;max-height:260px;overflow-y:auto;margin-bottom:10px;background:#fff;border-radius:8px;padding:8px 10px"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -598,70 +598,63 @@ document.addEventListener('DOMContentLoaded',function(){
     markDoneSAP(gdvName, mySAP);
     
     var qlkvs = DATA[gdvName] || {};
-    var qlkvList = Object.keys(qlkvs).sort(function(a,b){return a.localeCompare(b,'vi');});
+    var stores = qlkvs[myQlkv] || [];
     
-    // Collect all stores under this GĐV, grouped by QLKV
-    var allStores = [];
-    var qlkvStoreMap = {};
-    qlkvList.forEach(function(q){
-      var stores = qlkvs[q] || [];
-      qlkvStoreMap[q] = { stores: stores, done: 0, total: stores.length };
-      stores.forEach(function(s){
-        allStores.push({ qlkv: q, sap: s.maSAP, ten: s.tenCH, tt: s.trangThai });
-        if(doneSAPs[s.maSAP]) qlkvStoreMap[q].done++;
-      });
+    // Count done vs total for THIS QLKV only
+    var done = 0, allStores = [];
+    stores.forEach(function(s){
+      allStores.push(s);
+      if(doneSAPs[s.maSAP]) done++;
     });
     
-    // Build HTML grouped by QLKV, showing undone CH names
+    var total = allStores.length;
+    var remain = total - done;
+    var pct = total > 0 ? Math.round(done/total*100) : 0;
+    
+    // Build HTML: list undone CH
     var html = '';
-    var totalDone = 0, totalAll = 0;
-    var undoneLines = [];
+    var undoneStores = allStores.filter(function(s){ return !doneSAPs[s.maSAP]; });
+    var doneStores = allStores.filter(function(s){ return doneSAPs[s.maSAP]; });
     
-    Object.keys(qlkvStoreMap).forEach(function(q){
-      var info = qlkvStoreMap[q];
-      totalDone += info.done;
-      totalAll += info.total;
-      var pct = info.total > 0 ? Math.round(info.done / info.total * 100) : 0;
-      var color = pct === 100 ? '#09843b' : pct >= 50 ? '#e65100' : '#c62828';
-      var icon = pct === 100 ? '✅' : '⏳';
-      
-      html += '<div style="margin-bottom:5px;border-bottom:1px solid #f0f0f0;padding-bottom:3px">'+
-        '<div style="font-weight:700;font-size:12px;color:#333">'+icon+' '+q+
-        ' <span style="color:'+color+';font-weight:800">'+info.done+'/'+info.total+'</span></div>';
-      
-      var undone = info.stores.filter(function(s){ return !doneSAPs[s.maSAP]; });
-      if(undone.length > 0 && undone.length <= 12){
-        undone.forEach(function(s){
-          html += '<div style="font-size:10.5px;color:#888;padding-left:16px">'+
-            '⬜ <b>'+s.sap+'</b> – '+s.tenCH.substring(0,40)+'</div>';
-        });
-      } else if(undone.length > 12){
-        html += '<div style="font-size:10.5px;color:#888;padding-left:16px">⬜ Còn '+undone.length+' CH</div>';
-      }
-      undone.forEach(function(s){
-        undoneLines.push('• '+s.sap+' – '+s.tenCH+' ('+q+')');
+    if(undoneStores.length > 0){
+      html += '<div style="margin-bottom:4px;font-weight:700;font-size:12px;color:#c62828">⬜ Chưa báo cáo ('+undoneStores.length+' CH)</div>';
+      undoneStores.slice(0, 15).forEach(function(s){
+        html += '<div style="font-size:10.5px;color:#888;padding:1px 0 1px 14px">'+
+          '<b>'+s.maSAP+'</b> – '+s.tenCH.substring(0,45)+'</div>';
       });
-      html += '</div>';
-    });
+      if(undoneStores.length > 15){
+        html += '<div style="font-size:10.5px;color:#999;padding-left:14px">... còn '+(undoneStores.length-15)+' CH</div>';
+      }
+    }
+    if(doneStores.length > 0){
+      html += '<div style="margin-top:6px;margin-bottom:4px;font-weight:700;font-size:12px;color:#09843b">✅ Đã báo cáo ('+doneStores.length+' CH)</div>';
+      doneStores.slice(-5).forEach(function(s){
+        html += '<div style="font-size:10.5px;color:#999;padding:1px 0 1px 14px">'+
+          '<b>'+s.maSAP+'</b> – '+s.tenCH.substring(0,45)+'</div>';
+      });
+      if(doneStores.length > 5){
+        html += '<div style="font-size:10.5px;color:#999;padding-left:14px">... và '+(doneStores.length-5)+' CH khác</div>';
+      }
+    }
     
-    var remain = totalAll - totalDone;
+    document.getElementById('remindQLKV').textContent = myQlkv;
     document.getElementById('remindCount').textContent = remain;
     document.getElementById('remindDetail').innerHTML = html || '<div style="color:#09843b;font-weight:600">🎉 Tất cả CH đã báo cáo xong!</div>';
     document.getElementById('btnCopyRemind').disabled = (remain === 0);
     
-    // Build reminder message with store details
+    // Build reminder message
     if(remain > 0){
-      var showLines = undoneLines.slice(0, 25);
-      var moreMsg = undoneLines.length > 25 ? '\n... và '+(undoneLines.length-25)+' CH khác' : '';
-      remindMsg = '🤝 *Cùng nhắc đồng đội — KHTT Zalo* 🤝\n\n'+
-        '👤 *'+gdvName+'* — '+myQlkv+' vừa báo cáo ✅\n'+
-        '📊 Đã làm: '+totalDone+'/'+totalAll+' CH ('+Math.round(totalDone/totalAll*100)+'%)\n'+
+      var lines = undoneStores.map(function(s){ return '• '+s.maSAP+' – '+s.tenCH; });
+      var showLines = lines.slice(0, 20);
+      var more = lines.length > 20 ? '\n... và '+(lines.length-20)+' CH khác' : '';
+      remindMsg = '🤝 *Nhắc đồng đội — '+myQlkv+'* 🤝\n\n'+
+        '✅ Đã báo cáo: '+done+'/'+total+' CH ('+pct+'%)\n'+
         '⚠️ Còn *'+remain+' CH* chưa báo cáo:\n\n'+
-        showLines.join('\n')+moreMsg+'\n\n'+
+        showLines.join('\n')+more+'\n\n'+
         '📲 Vào form: https://ruralwcm.github.io/khtt-zalo/\n'+
-        '⏰ Hạn chót: Chủ Nhật 23:00\n💪 Cả nhà cùng làm nhé!';
+        '⏰ Hạn chót: Chủ Nhật 23:00';
     } else {
-      remindMsg = '🎉 *'+gdvName+'* — 100% CH đã báo cáo KHTT Zalo! ('+totalAll+'/'+totalAll+' CH) 🎉';
+      remindMsg = '🎉 *'+myQlkv+'* — 100% CH đã báo cáo KHTT! ('+total+'/'+total+') 🎉';
     }
   }
   
