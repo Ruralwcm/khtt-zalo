@@ -80,10 +80,7 @@
   <div class="head">
     <div><h1>📊 Thống Kê KHTT Zalo <span class="ver">v2.9</span></h1><p id="dataInfo">⏳ Đang tải...</p></div>
   </div>
-  <div class="tabs">
-    <div class="tab on" onclick="showPage('form')">📝 Khảo sát</div>
-    <div class="tab" onclick="showPage('dash')">📊 Dashboard</div>
-  </div>
+  
 
   <!-- FORM -->
   <div class="panel show" id="pageForm">
@@ -120,7 +117,10 @@
   <!-- DASHBOARD -->
   <div class="page-dash" id="pageDash">
     <div class="card">
-      <h2>📊 Tiến độ KHTT Zalo</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2 style="margin:0">📊 Tiến độ KHTT Zalo</h2>
+        <a href="#" onclick="showPage('form');return false" style="font-size:12px;color:var(--navy);font-weight:600">← Quay lại form</a>
+      </div>
       <div class="wk-sel">
         <span style="font-size:12px;color:var(--mut);font-weight:600">Tuần:</span>
         <select id="selWeek" onchange="buildDashboard()"><option value="">— Đang tải —</option></select>
@@ -135,7 +135,7 @@
     <div style="font-size:10px;color:var(--mut);text-align:center;margin-top:6px" id="dashNote"></div>
   </div>
 
-  <div class="foot">KHTT Zalo · Rural WCM · <span id="updateTime"></span></div>
+  <div class="foot">KHTT Zalo · Rural WCM · <a href="#" onclick="showPage('dash');return false" style="color:var(--navy);font-weight:700">📊 Dashboard</a> · <span id="updateTime"></span></div>
 </div>
 
 <script>
@@ -197,7 +197,6 @@ function loadKHTTHistoryCache(){
 
 // ===== PAGE SWITCH =====
 function showPage(p){
-  document.querySelectorAll('.tab').forEach(function(t,i){t.className='tab'+(i===(p==='form'?0:1)?' on':'')});
   document.getElementById('pageForm').className='panel'+(p==='form'?' show':'');
   document.getElementById('pageDash').className='page-dash'+(p==='dash'?' show':'');
   if(p==='dash'){loadKHTTData(document.getElementById('selWeek').value||currentWeek)}}
