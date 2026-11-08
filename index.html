@@ -173,27 +173,6 @@ input.invalid{border-color:#e53935;box-shadow:0 0 0 3px rgba(229,57,53,0.10)}
         </div>
       </div>
 
-      <!-- Upload ảnh -->
-      <div class="field">
-        <label>Ảnh Chụp Màn Hình Nhóm Zalo <span class="req">*</span></label>
-        <div class="upload-area" id="uploadArea">
-          <input type="file" id="inputFile" accept="image/*" disabled>
-          <div id="uploadPlaceholder">
-            <div class="upload-icon">🖼️</div>
-            <div class="upload-text">Nhấn để chọn ảnh</div>
-            <div class="upload-sub">JPG, PNG · Tối đa 500 KB</div>
-          </div>
-          <div class="upload-preview" id="uploadPreview">
-            <img id="previewImg" src="" alt="Preview">
-            <div class="fname" id="previewName"></div>
-            <div class="fsize" id="previewSize"></div>
-            <span class="remove-file" onclick="removeFile(event)">✕ Xóa ảnh</span>
-          </div>
-        </div>
-        <div class="err" id="errFile"></div>
-        <div class="ok" id="okFile"></div>
-      </div>
-
       <button type="submit" class="submit-btn" id="btnSubmit" disabled>✅ Gửi Báo Cáo</button>
     </form>
   </div>
@@ -275,8 +254,6 @@ var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxeW2WtmPzr3GSWUK
 
 var DATA = {};
 var MIEN_DATA = {};
-var fileBase64 = null;
-var fileName = '';
 
 // ===== UTILS =====
 function isValidName(s){ return s && s.length >= 3 && s.indexOf('\uFFFD') < 0; }
@@ -418,7 +395,6 @@ document.addEventListener('DOMContentLoaded',function(){
   var selGDVQLKV=document.getElementById('selGDVQLKV');
   var selCH=document.getElementById('selCH');
   var inputKHTT=document.getElementById('inputKHTT');
-  var inputFile=document.getElementById('inputFile');
   var btnSubmit=document.getElementById('btnSubmit');
   var h1=document.getElementById('h1');
 
@@ -476,34 +452,14 @@ document.addEventListener('DOMContentLoaded',function(){
   // KHTT input - chỉ số nguyên + cảnh báo chênh lệch
   inputKHTT.addEventListener('input',function(){
     this.value=this.value.replace(/[^0-9]/g,'');
-    var valid=validateKHTT(true);
-    inputFile.disabled=!valid;
+    validateKHTT(true);
     checkKHTTDelta();
     checkSubmit();
   });
   inputKHTT.addEventListener('blur',function(){
-    var valid=validateKHTT(true);
-    inputFile.disabled=!valid;
+    validateKHTT(true);
     checkKHTTDelta();
     checkSubmit();
-  });
-
-  // File upload
-  inputFile.addEventListener('change',function(){
-    var file=this.files[0];
-    if(!file) return;
-    validateFile(file);
-    checkSubmit();
-  });
-
-  // Drag & drop
-  var area=document.getElementById('uploadArea');
-  area.addEventListener('dragover',function(e){e.preventDefault();this.classList.add('drag');});
-  area.addEventListener('dragleave',function(){this.classList.remove('drag');});
-  area.addEventListener('drop',function(e){
-    e.preventDefault();this.classList.remove('drag');
-    var file=e.dataTransfer.files[0];
-    if(file){ inputFile.files=e.dataTransfer.files; validateFile(file); checkSubmit(); }
   });
 
   // Submit
@@ -513,11 +469,6 @@ document.addEventListener('DOMContentLoaded',function(){
     if(!selGDVQLKV.value){alert('Vui lòng chọn GĐV/QLKV');return;}
     if(!selCH.value){alert('Vui lòng chọn cửa hàng');return;}
     if(!validateKHTT(true)){inputKHTT.focus();return;}
-    if(!fileBase64){
-      document.getElementById('errFile').textContent='❌ Vui lòng chọn ảnh chụp màn hình';
-      document.getElementById('errFile').style.display='block';
-      return;
-    }
 
     var parts=selGDVQLKV.value.split('||'),gdv=parts[0],qlkv=parts[1];
     var maSAP=selCH.value;
@@ -528,8 +479,6 @@ document.addEventListener('DOMContentLoaded',function(){
     btnSubmit.disabled=true;
     btnSubmit.textContent='⏳ Đang gửi...';
 
-    // Không gửi ảnh trong payload chính (quá lớn gây lỗi)
-    // Ảnh sẽ được upload riêng qua fetch sau khi data chính đã ghi xong
     var payload={
       formType:'khtt-zalo',
       thoiGian:ts,
@@ -538,8 +487,7 @@ document.addEventListener('DOMContentLoaded',function(){
       qlkv:qlkv,
       maSAP:maSAP,
       tenCH:tenCH,
-      ghiChu:soKHTT,
-      photos:[]
+      ghiChu:soKHTT
     };
 
     // Gửi qua fetch (cors mode để nhận response)
@@ -574,8 +522,7 @@ document.addEventListener('DOMContentLoaded',function(){
       '<div class="row"><span class="lbl">GĐV</span><span class="val">'+gdv+'</span></div>'+
       '<div class="row"><span class="lbl">QLKV</span><span class="val">'+qlkv+'</span></div>'+
       '<div class="row"><span class="lbl">Cửa hàng</span><span class="val">'+tenCH+'</span></div>'+
-      '<div class="row"><span class="lbl">Số KHTT</span><span class="val" style="color:#09843b;font-size:16px;font-weight:800">'+soKHTT.toLocaleString('vi-VN')+' khách</span></div>'+
-      '<div class="row"><span class="lbl">Ảnh</span><span class="val">'+(fileName?fileName+' ✅':'Không có')+'</span></div>';
+      '<div class="row"><span class="lbl">Số KHTT</span><span class="val" style="color:#09843b;font-size:16px;font-weight:800">'+soKHTT.toLocaleString('vi-VN')+' khách</span></div>';
     document.getElementById('mainCard').style.display='none';
     document.getElementById('successCard').style.display='block';
     
@@ -749,8 +696,9 @@ function showKHTTHistory(sap){
   var histDiv = document.getElementById('khttHistory');
   var histList = document.getElementById('khttHistoryList');
   
+  histDiv.style.display = 'block';
   if(history.length === 0){
-    histDiv.style.display = 'none';
+    histList.innerHTML = '<div style="color:#999;font-style:italic">📭 Chưa có lịch sử khảo sát</div>';
     return;
   }
   
@@ -789,65 +737,13 @@ function checkKHTTDelta(){
 }
 
 // ===== VALIDATE FILE =====
-function validateFile(file){
-  var err=document.getElementById('errFile');
-  var ok=document.getElementById('okFile');
-  err.style.display='none'; ok.style.display='none';
-  fileBase64=null; fileName='';
-
-  var maxSize=500*1024; // 500KB
-  if(!file.type.startsWith('image/')){
-    err.textContent='❌ Vui lòng chọn file ảnh (JPG, PNG)';
-    err.style.display='block';
-    return false;
-  }
-  if(file.size>maxSize){
-    err.textContent='❌ Ảnh vượt quá 500 KB (hiện tại: '+Math.round(file.size/1024)+' KB)';
-    err.style.display='block';
-    return false;
-  }
-
-  // Read as base64
-  var reader=new FileReader();
-  reader.onload=function(e){
-    fileBase64=e.target.result; // data:image/...;base64,...
-    fileName=file.name;
-
-    // Show preview
-    document.getElementById('uploadArea').classList.add('has-file');
-    document.getElementById('uploadPlaceholder').style.display='none';
-    var preview=document.getElementById('uploadPreview');
-    preview.style.display='block';
-    document.getElementById('previewImg').src=fileBase64;
-    document.getElementById('previewName').textContent=file.name;
-    document.getElementById('previewSize').textContent=Math.round(file.size/1024)+' KB';
-    ok.textContent='✅ Ảnh hợp lệ ('+Math.round(file.size/1024)+' KB)';
-    ok.style.display='block';
-    checkSubmit();
-  };
-  reader.readAsDataURL(file);
-  return true;
-}
-
-function removeFile(e){
-  e.stopPropagation();
-  fileBase64=null; fileName='';
-  document.getElementById('inputFile').value='';
-  document.getElementById('uploadArea').classList.remove('has-file');
-  document.getElementById('uploadPlaceholder').style.display='block';
-  document.getElementById('uploadPreview').style.display='none';
-  document.getElementById('previewImg').src='';
-  document.getElementById('okFile').style.display='none';
-  checkSubmit();
-}
-
 // ===== CHECK SUBMIT =====
 function checkSubmit(){
   var selMien=document.getElementById('selMien');
   var selGDVQLKV=document.getElementById('selGDVQLKV');
   var selCH=document.getElementById('selCH');
   var btnSubmit=document.getElementById('btnSubmit');
-  var ok=selMien.value&&selGDVQLKV.value&&selCH.value&&validateKHTT(false)&&fileBase64;
+  var ok=selMien.value&&selGDVQLKV.value&&selCH.value&&validateKHTT(false);
   btnSubmit.disabled=!ok;
 }
 
@@ -876,9 +772,6 @@ function resetFrom(n){
     document.getElementById('okKHTT').style.display='none';
     document.getElementById('khttHistory').style.display='none';
     document.getElementById('khttWarn').style.display='none';
-    document.getElementById('inputFile').disabled=true;
-    removeFile({stopPropagation:function(){}});
-    document.getElementById('inputFile').disabled=true;
   }
   document.getElementById('btnSubmit').disabled=true;
 }
@@ -888,8 +781,6 @@ function resetForm(){
   document.getElementById('mainForm').reset();
   document.getElementById('selMien').value='';
   resetFrom(2);
-  // Re-enable file input after reset
-  document.getElementById('inputFile').disabled=true;
   setStep(1);
   document.getElementById('btnSubmit').textContent='✅ Gửi Báo Cáo';
   document.getElementById('successCard').style.display='none';
